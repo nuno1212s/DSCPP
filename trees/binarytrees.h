@@ -187,11 +187,14 @@ protected:
 
         if (this->getRoot() == nullptr) {
 
-            std::unique_ptr<TreeNode<T, V>> newRoot =  initializeNode(key, value, nullptr);
+            std::unique_ptr<TreeNode<T, V>> newRoot = initializeNode(key, value, nullptr);
 
             std::cout << "new root node " << std::endl;
 
             this->setRootNode(std::move(newRoot));
+
+            this->setLeftMostNode(this->getRoot());
+            this->setRightMostNode(this->getRoot());
 
             this->treeSize++;
 
@@ -231,11 +234,27 @@ protected:
 
         std::unique_ptr<TreeNode<T, V>> newNode = initializeNode(key, value, parent);
 
+        TreeNode<T, V> *newNodeP = newNode.get();
+
         if (*keyRef < keyValue) {
+
+            //When adding a child to the left of a node, check if the key is smaller than the current smallest
+            //If so, update the smallest node
+            if (*keyRef < *std::get<0>(*this->peekSmallest())) {
+                this->setLeftMostNode(newNodeP);
+            }
+
             parent->setLeftChild(std::move(newNode));
 
             std::cout << "Left " << std::endl;
         } else {
+
+            //When adding a child to the right of a node, check if the key is largest than the current largest
+            //If so, update the largest node
+            if (*keyRef > *std::get<0>(*this->peekLargest())) {
+                this->setRightMostNode(newNodeP);
+            }
+
             parent->setRightChild(std::move(newNode));
 
             std::cout << "Right " << std::endl;
@@ -243,7 +262,7 @@ protected:
 
         this->treeSize++;
 
-        return newNode.get();
+        return newNodeP;
     }
 
     /**
@@ -280,6 +299,24 @@ protected:
                 } else if (root->getLeftChild() != nullptr) {
                     toReplace = getRightMostNodeInTree(root->getLeftChild());
                     std::cout << "2" << std::endl;
+                }
+
+                if (root->getRightChild() == nullptr) {
+
+                    auto largest = this->peekLargest();
+                    if (largest) {
+                        if (key == *std::get<0>(*largest)) {
+                            this->setRightMostNode(root->getParent());
+                        }
+                    }
+                }
+
+                if (root->getLeftChild() == nullptr) {
+                    auto smallest = this->peekSmallest();
+
+                    if (key == *std::get<0>(*smallest)) {
+                        this->setLeftMostNode(root->getParent());
+                    }
                 }
 
                 if (toReplace != nullptr && toReplace != root) {
@@ -518,6 +555,5 @@ public:
     }
 
 };
-
 
 #endif //TRABALHO1_BINARYTREES_H
