@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <optional>
+
 template<typename T>
 class Set {
 public:

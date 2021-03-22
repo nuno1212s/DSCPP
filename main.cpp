@@ -1,7 +1,7 @@
-#include <iostream>
-#include <memory>
 #include "datastructures.h"
 #include "trees/avltree.h"
+#include <iostream>
+#include <memory>
 
 class Test {
 
@@ -37,8 +37,8 @@ int main() {
     std::unique_ptr<Map<int, int>> map = std::make_unique<AvlTree<int, int>>();
 
     std::shared_ptr<int> key(new int(2)), value(new int(1)),
-    key2(new int(1)), key3(new int(3)), key4(new int(0)),
-    key5(new int(-1));
+            key2(new int(1)), key3(new int(3)), key4(new int(0)),
+            key5(new int(5));
 
     map->add(key, value);
 
@@ -47,10 +47,15 @@ int main() {
     map->add(key3, value);
 
     map->add(key4, value);
+
     map->add(key5, value);
 
     map->remove(2);
     map->remove(0);
+    map->remove(1);
+
+    std::cout << "Contains: " << map->hasKey(5) << std::endl;
+    std::cout << "Contains: " << map->hasKey(2) << std::endl;
 
     auto entries = map->entries();
 
