@@ -9,20 +9,22 @@ int main() {
 
     std::unique_ptr<TreeMap<int, int>> map = std::make_unique<AvlTree<int, int>>();
 
-    std::shared_ptr<int> key(new int(4)),
-            key2(new int(3)), key3(new int(2)), key4(new int(1)),
-            key5(new int(0)),
-            value(new int(1));
+    std::shared_ptr<int> value =  std::make_shared<int>(42);
 
-    map->add(key, value);
+    for (int i = 0; i < 7; i ++) {
+        std::shared_ptr<int> key(new int(i));
 
-    map->add(key2, value);
+        map->add(std::move(key), value);
+    }
 
-    map->add(key3, value);
+//     map->add(std::make_shared<int>(5), value);
+//     map->add(std::make_shared<int>(2), value);
+//     map->add(std::make_shared<int>(4), value);
 
-    map->add(key4, value);
-
-    map->add(key5, value);
+    for (int i = 6; i >= 4; i--) {
+        std::cout << "Removing " << i << std::endl;
+        map->remove(i);
+    }
 
 //    map->remove(5);
 //    map->remove(0);
