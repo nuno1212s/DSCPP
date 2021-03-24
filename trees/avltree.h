@@ -7,69 +7,69 @@
 template<typename T, typename V>
 class AVLNode : public TreeNode<T, V> {
 private:
-    int balance;
+    int height;
 
 public:
     AVLNode(std::shared_ptr<T> key, std::shared_ptr<V> value, AVLNode<T, V> *parent)
             : TreeNode<T, V>(std::move(key),
                              std::move(value),
                              parent),
-              balance(0) {}
+              height(0) {}
 
-    int getBalance() {
-        return balance;
+    int getHeight() {
+        return height;
     }
 
-    void setBalance(int balance) {
-        this->balance = balance;
+    void setHeight(int balance) {
+        this->height = balance;
     }
 };
+
+template<typename T, typename V>
+static int getHeight(TreeNode<T, V> *node) {
+    if (node == nullptr) return 0;
+
+    return ((AVLNode<T, V> *) node)->getHeight();
+}
+
+template<typename T, typename V>
+static int getBalance(TreeNode<T, V> *node) {
+    return getHeight(node->getLeftChild()) - getHeight(node->getRightChild());
+}
 
 template<typename T, typename V>
 class AvlTree : public BinarySearchTree<T, V> {
 
 private:
-    std::unique_ptr<AVLNode<T, V>> rotateLeft(std::unique_ptr<AVLNode<T, V>> root) {
 
-        std::unique_ptr<AVLNode<T, V>> right(static_cast<AVLNode<T, V>*>(root->getRightNodeOwnership().release()));
+    std::unique_ptr<TreeNode<T, V>> rotateLeft(std::unique_ptr<TreeNode<T, V>> root) override {
 
-        AVLNode<T, V> *rootRef = root.get(), *rightRef = right.get();
+        auto *rootRef = (AVLNode<T, V>*) root.get();
 
-        std::cout << "Rotating left around root: " << *(root->getKey()) << std::endl;
+        auto newRoot = BinarySearchTree<T, V>::rotateLeft(std::move(root));
 
-        if (rightRef->getLeftChild() != nullptr) {
-            //Move the left child of the root's right child into the right child of the root
-            root->setRightChild(std::move(rightRef->getLeftNodeOwnership()));
-        }
+        auto* rightRef = (AVLNode<T, V>*) newRoot.get();
 
-        //The set child methods automatically set the parent to the node that they have been moved to
-        rightRef->setLeftChild(std::move(root));
-
-        rootRef->setBalance(rootRef->getBalance() - 1 - std::max(0, rightRef->getBalance()));
-        rightRef->setBalance(rightRef->getBalance() - 1 + std::min(0, rootRef->getBalance()));
+        rootRef->setHeight(1 + std::max(getHeight(rootRef->getLeftChild()), getHeight(rootRef->getRightChild())));
+        rightRef->setHeight(1 + std::max(getHeight(rightRef->getLeftChild()), getHeight(rightRef->getRightChild())));
 
         //The new root is now the right node
-        return right;
+        return std::move(newRoot);
     }
 
-    std::unique_ptr<AVLNode<T, V>> rotateRight(std::unique_ptr<AVLNode<T, V>> root) {
+    std::unique_ptr<TreeNode<T, V>> rotateRight(std::unique_ptr<TreeNode<T, V>> root) override {
 
-        std::unique_ptr<AVLNode<T, V>> left(static_cast<AVLNode<T, V>*>(root->getLeftNodeOwnership().release()));
+        auto *rootRef = (AVLNode<T, V> *) root.get();
 
-        AVLNode<T, V> *rootRef = root.get(), *leftRef = left.get();
+        auto newRoot = BinarySearchTree<T, V>::rotateRight(std::move(root));
 
-        std::cout << "Rotating right around root: " << *(root->getKey()) << std::endl;
+        auto *leftRef = (AVLNode<T, V> *) newRoot.get();
 
-        if (leftRef->getRightChild() != nullptr) {
-            rootRef->setLeftChild(std::move(leftRef->getRightNodeOwnership()));
-        }
+        rootRef->setHeight(1 + std::max(getHeight(rootRef->getLeftChild()), getHeight(rootRef->getRightChild())));
+        leftRef->setHeight(1 + std::max(getHeight(leftRef->getLeftChild()), getHeight(leftRef->getRightChild())));
 
-        leftRef->setRightChild(std::move(root));
-
-        rootRef->setBalance(rootRef->getBalance() + 1 - std::min(0, leftRef->getBalance()));
-        leftRef->setBalance(leftRef->getBalance() + 1 - std::max(0, rootRef->getBalance()));
-
-        return left;
+        //The new root is now the left node
+        return std::move(newRoot);
     }
 
     void rotateRightP(AVLNode<T, V> *root) {
@@ -78,19 +78,19 @@ private:
 
         if (parent == nullptr) {
             std::unique_ptr<AVLNode<T, V>> rootOwner(
-                    static_cast<AVLNode<T, V>*>(this->getRootNodeOwnership().release()));
+                    static_cast<AVLNode<T, V> *>(this->getRootNodeOwnership().release()));
 
             this->setRootNode(rotateRight(std::move(rootOwner)));
 
         } else {
             if (parent->getLeftChild() == root) {
                 std::unique_ptr<AVLNode<T, V>> leftOwner(
-                        static_cast<AVLNode<T, V>*>(parent->getLeftNodeOwnership().release()));
+                        static_cast<AVLNode<T, V> *>(parent->getLeftNodeOwnership().release()));
 
                 parent->setLeftChild(rotateRight(std::move(leftOwner)));
             } else {
                 std::unique_ptr<AVLNode<T, V>> rightOwner(
-                        static_cast<AVLNode<T, V>*>(parent->getRightNodeOwnership().release()));
+                        static_cast<AVLNode<T, V> *>(parent->getRightNodeOwnership().release()));
 
                 parent->setRightChild(rotateRight(std::move(rightOwner)));
             }
@@ -103,85 +103,86 @@ private:
 
         if (parent == nullptr) {
             std::unique_ptr<AVLNode<T, V>> rootOwner(
-                    static_cast<AVLNode<T, V>*>(this->getRootNodeOwnership().release()));
+                    static_cast<AVLNode<T, V> *>(this->getRootNodeOwnership().release()));
 
             this->setRootNode(rotateLeft(std::move(rootOwner)));
         } else {
 
             if (parent->getLeftChild() == root) {
                 std::unique_ptr<AVLNode<T, V>> leftOwner(
-                        static_cast<AVLNode<T, V>*>(parent->getLeftNodeOwnership().release()));
+                        static_cast<AVLNode<T, V> *>(parent->getLeftNodeOwnership().release()));
                 parent->setLeftChild(rotateLeft(std::move(leftOwner)));
             } else {
                 std::unique_ptr<AVLNode<T, V>> rightOwner(
-                        static_cast<AVLNode<T, V>*>(parent->getRightNodeOwnership().release()));
+                        static_cast<AVLNode<T, V> *>(parent->getRightNodeOwnership().release()));
 
                 parent->setRightChild(rotateLeft(std::move(rightOwner)));
             }
         }
     }
 
-    void rebalance(AVLNode<T, V> *root) {
-        if (root->getBalance() > 0) {
+    void rebalance(AVLNode<T, V> *root, int balance) {
+        if (balance > 1) {
 
-            auto rightChild = (AVLNode<T, V> *) root->getRightChild();
+            auto leftChild = (AVLNode<T, V> *) root->getLeftChild();
 
-            if (rightChild->getBalance() < 0) {
-
-                std::unique_ptr<AVLNode<T, V>> rightChildOwner(
-                        static_cast<AVLNode<T, V>*>(root->getRightNodeOwnership().release()));
-
-                auto result = rotateRight(std::move(rightChildOwner));
-
-                root->setRightChild(std::move(result));
-
-                rotateLeftP(root);
+            if (getBalance(leftChild) >= 0) {
+                rotateRightP(root);
             } else {
-                rotateLeftP(root);
-            }
-        } else if (root->getBalance() < 0) {
-
-            auto leftChild = (AVLNode<T,V> *) root->getLeftChild();
-
-            if (leftChild->getBalance() > 0) {
                 std::unique_ptr<AVLNode<T, V>> leftChildOwner(
-                        static_cast<AVLNode<T, V>*>(root->getLeftNodeOwnership().release()));
+                        static_cast<AVLNode<T, V> *>(root->getLeftNodeOwnership().release()));
 
                 auto result = rotateLeft(std::move(leftChildOwner));
 
                 root->setLeftChild(std::move(result));
 
                 rotateRightP(root);
+            }
+
+        } else if (balance < -1) {
+
+            auto rightChild = (AVLNode<T, V> *) root->getRightChild();
+
+            if (getBalance(rightChild) <= 0) {
+                rotateLeftP(root);
             } else {
-                rotateRightP(root);
+                std::unique_ptr<AVLNode<T, V>> rightChildOwner(
+                        static_cast<AVLNode<T, V> *>(root->getRightNodeOwnership().release()));
+
+                auto result = rotateRight(std::move(rightChildOwner));
+
+                root->setRightChild(std::move(result));
+
+                rotateLeftP(root);
             }
         }
     }
 
-    void updateBalance(AVLNode<T, V> *leaf, int increase) {
-        if (leaf->getBalance() > 1 || leaf->getBalance() < -1) {
-            rebalance(leaf);
-            return;
+    void updateBalance(AVLNode<T, V> *leaf) {
+
+        if (leaf == nullptr) return;
+
+        auto leftHeight = getHeight((AVLNode<T, V> *) leaf->getLeftChild());
+        auto rightHeight = getHeight((AVLNode<T, V> *) leaf->getRightChild());
+
+        leaf->setHeight(1 + std::max(leftHeight, rightHeight));
+
+        int bal = leftHeight - rightHeight;
+
+        if (bal > 1 || bal < -1) {
+            rebalance(leaf, bal);
         }
 
-        if (leaf->getParent() != nullptr) {
+        updateBalance((AVLNode<T, V> *) leaf->getParent());
 
-            auto parent = (AVLNode<T, V>*) leaf->getParent();
-
-            if (parent->getLeftChild() == leaf) {
-                parent->setBalance(parent->getBalance() - increase);
-            } else {
-                parent->setBalance(parent->getBalance() + increase);
-            }
-
-            if (parent->getBalance() != 0) {
-                updateBalance(parent, increase);
-            }
-        }
     }
 
 public:
     AvlTree() : BinarySearchTree<T, V>() {}
+
+    int getTreeHeight() override {
+        return ((AVLNode<T, V>*) this->getRoot())->getHeight();
+    }
 
     std::unique_ptr<TreeNode<T, V>> initializeNode(std::shared_ptr<T> key, std::shared_ptr<V> value,
                                                    TreeNode<T, V> *parent) override {
@@ -190,31 +191,50 @@ public:
     }
 
     void add(std::shared_ptr<T> key, std::shared_ptr<V> value) override {
-        TreeNode<T, V> *nodes = this->addNode(key, value);
+        TreeNode<T, V> *newNode = this->addNode(key, value);
 
-        updateBalance((AVLNode<T, V>*) nodes, +1);
+        updateBalance((AVLNode<T, V> *) newNode);
     }
 
-    std::optional<std::shared_ptr<V>> remove(const T&key) override {
+    std::optional<std::shared_ptr<V>> remove(const T &key) override {
         auto removedNodeInfo = this->removeNode(key);
 
         if (removedNodeInfo) {
             std::unique_ptr<AVLNode<T, V>> removedNode(
                     static_cast<AVLNode<T, V> *> (std::get<1>(*removedNodeInfo).release()));
 
-            updateBalance(removedNode.get(), -1);
+            updateBalance((AVLNode<T, V> *) removedNode->getParent());
 
             return std::get<1>(std::get<0>(*removedNodeInfo));
+        } else {
+            std::cout << "not present" << std::endl;
+            return std::nullopt;
+        }
+    }
+
+    std::optional<node_info<T, V>> popSmallest() override {
+
+        if (this->leftMostNode != nullptr) {
+
+            auto result = this->popSmallestNode();
+
+            updateBalance((AVLNode<T, V> *) std::get<1>(result)->getParent());
+
+            return std::get<0>(result);
         }
 
         return std::nullopt;
     }
 
-    std::optional<node_info<T, V>> popSmallest() override {
-        return std::nullopt;
-    }
-
     std::optional<node_info<T, V>> popLargest() override {
+        if (this->rightMostNode != nullptr) {
+
+            auto result = this->popLargestNode();
+
+            updateBalance((AVLNode<T, V> *) std::get<1>(result)->getParent());
+
+            return std::get<0>(result);
+        }
         return std::nullopt;
     }
 
