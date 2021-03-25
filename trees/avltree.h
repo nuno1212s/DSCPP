@@ -237,8 +237,6 @@ public:
         }
         return std::nullopt;
     }
-
 };
-
 
 #endif //TRABALHO1_AVLTREE_H

@@ -284,7 +284,7 @@ protected:
      * @param key
      * @return
      */
-    std::optional<std::tuple<node_info<T, V>, std::unique_ptr<TreeNode<T, V>>>> removeNode(const T &key) {
+    std::optional<std::tuple<node_info<T, V>, std::unique_ptr<TreeNode<T, V>>, TreeNode<T, V>*>> removeNode(const T &key) {
 
         if (this->getRoot() == nullptr) {
             return std::nullopt;
@@ -336,13 +336,15 @@ protected:
                 if (child.get() != nullptr) {
                     this->treeSize--;
 
+                    auto childP = child.get();
+
                     if (root->getParent() == nullptr) {
 
                         auto oldRoot = this->getRootNodeOwnership();
 
                         this->setRootNode(std::move(child));
 
-                        return std::make_tuple(nodeInfo, std::move(oldRoot));
+                        return std::make_tuple(nodeInfo, std::move(oldRoot), childP);
                     } else {
                         if (root->getParent()->getLeftChild() == root) {
 
@@ -351,7 +353,7 @@ protected:
                             root->getParent()->setLeftChild(std::move(child));
 //                            std::cout << "moved left child" << std::endl;
 
-                            return std::make_tuple(nodeInfo, std::move(ownership));
+                            return std::make_tuple(nodeInfo, std::move(ownership), childP);
                         } else {
                             auto ownership = root->getParent()->getRightNodeOwnership();
 
@@ -359,7 +361,7 @@ protected:
 
 //                            std::cout << "moved right child" << std::endl;
 
-                            return std::make_tuple(nodeInfo, std::move(ownership));
+                            return std::make_tuple(nodeInfo, std::move(ownership), childP);
                         }
                     }
                 } else if (toReplace != nullptr && toReplace != root) {
@@ -374,7 +376,6 @@ protected:
                     //Update the key we are searching for to remove the duplicate
                     currentKey = toReplace->getKeyVal();
                     root = root->getRightChild();
-
 
                 } else {
 
@@ -394,15 +395,12 @@ protected:
                             child = parentNode->getRightNodeOwnership();
                         }
 
-                        return std::make_tuple(nodeInfo, std::move(child));
+                        return std::make_tuple(nodeInfo, std::move(child), nullptr);
                     } else {
-
                         //Node is the root and has no leaves so it must be the only node in the tree
-                        return std::make_tuple(nodeInfo, std::move(this->getRootNodeOwnership()));
+                        return std::make_tuple(nodeInfo, std::move(this->getRootNodeOwnership()), nullptr);
                     }
-
                 }
-
             } else if (*currentKey < *root->getKeyVal()) {
                 root = root->getLeftChild();
             } else {
@@ -537,14 +535,13 @@ protected:
         return std::make_tuple(std::make_tuple(leftMost->getKey(), leftMost->getValue()), std::move(leftMost));
     }
 
-
     virtual std::unique_ptr<TreeNode<T, V>> rotateLeft(std::unique_ptr<TreeNode<T, V>> root) {
 
         std::unique_ptr<TreeNode<T, V>> right = root->getRightNodeOwnership();
 
         TreeNode<T, V> *rootRef = root.get(), *rightRef = right.get();
 
-//        std::cout << "Rotating left around root: " << *(root->getKeyVal()) << std::endl;
+        std::cout << "Rotating left around root: " << *(root->getKeyVal()) << std::endl;
 
         if (rightRef->getLeftChild() != nullptr) {
             //Move the left child of the root's right child into the right child of the root
@@ -564,7 +561,7 @@ protected:
 
         TreeNode<T, V> *rootRef = root.get(), *leftRef = left.get();
 
-//        std::cout << "Rotating right around root: " << *(root->getKeyVal()) << std::endl;
+        std::cout << "Rotating right around root: " << *(root->getKeyVal()) << std::endl;
 
         if (leftRef->getRightChild() != nullptr) {
             rootRef->setLeftChild(std::move(leftRef->getRightNodeOwnership()));
@@ -673,7 +670,7 @@ public:
 
             node_info<T, V> keyValue;
 
-            std::tie(keyValue, std::ignore) = *result;
+            std::tie(keyValue, std::ignore, std::ignore) = *result;
 
             std::shared_ptr<V> value;
 
