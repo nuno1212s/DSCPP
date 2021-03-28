@@ -120,10 +120,6 @@ protected:
         this->rootNode.reset();
     }
 
-    TreeNode<T, V> *getRoot() {
-        return this->rootNode.get();
-    }
-
     std::unique_ptr<TreeNode<T, V>> getRootNodeOwnership() {
         return std::move(rootNode);
     }
@@ -142,8 +138,6 @@ protected:
     void setRightMostNode(TreeNode<T, V> *rightMost) {
         this->rightMostNode = rightMost;
     }
-
-protected:
 
     void inOrderHelper(TreeNode<T, V> *current, std::vector<node_info<T, V>> *destination) {
 
@@ -744,6 +738,10 @@ public:
         return vector;
     }
 
+
+    TreeNode<T, V> *getRoot() {
+        return this->rootNode.get();
+    }
 };
 
 #endif //TRABALHO1_BINARYTREES_H

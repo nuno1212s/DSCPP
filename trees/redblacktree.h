@@ -89,19 +89,19 @@ protected:
         auto parent = root->getParent();
 
         if (parent == nullptr) {
-            std::unique_ptr<AVLNode<T, V>> rootOwner(
-                    static_cast<AVLNode<T, V> *>(this->getRootNodeOwnership().release()));
+            std::unique_ptr<RBNode<T, V>> rootOwner(
+                    static_cast<RBNode<T, V> *>(this->getRootNodeOwnership().release()));
 
             this->setRootNode(this->rotateLeft(std::move(rootOwner)));
         } else {
 
             if (parent->getLeftChild() == root) {
-                std::unique_ptr<AVLNode<T, V>> leftOwner(
-                        static_cast<AVLNode<T, V> *>(parent->getLeftNodeOwnership().release()));
+                std::unique_ptr<RBNode<T, V>> leftOwner(
+                        static_cast<RBNode<T, V> *>(parent->getLeftNodeOwnership().release()));
                 parent->setLeftChild(this->rotateLeft(std::move(leftOwner)));
             } else {
-                std::unique_ptr<AVLNode<T, V>> rightOwner(
-                        static_cast<AVLNode<T, V> *>(parent->getRightNodeOwnership().release()));
+                std::unique_ptr<RBNode<T, V>> rightOwner(
+                        static_cast<RBNode<T, V> *>(parent->getRightNodeOwnership().release()));
 
                 parent->setRightChild(this->rotateLeft(std::move(rightOwner)));
             }

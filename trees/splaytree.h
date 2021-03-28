@@ -242,10 +242,12 @@ public:
 
             } else {
 
+                auto *leftNodeP = leftNodeOwner.get();
+
                 //Set the left sub tree as the new root-
                 this->setRootNode(std::move(leftNodeOwner));
 
-                auto largestNodeInRoot1 = this->getRightMostNodeInTree(leftNodeOwner.get());
+                auto largestNodeInRoot1 = this->getRightMostNodeInTree(leftNodeP);
 
                 //Splay the largest node
                 splay(largestNodeInRoot1);
@@ -253,6 +255,8 @@ public:
                 //The right subtree is now the right child of the
                 largestNodeInRoot1->setRightChild(std::move(rightNodeOwner));
             }
+
+            this->treeSize--;
 
             return rootOwner.get()->getKey();
 
@@ -264,6 +268,7 @@ public:
     std::optional<node_info<T, V>> popLargest() override {
 
         if (this->rightMostNode != nullptr) {
+
             auto rightNode = this->rightMostNode;
 
             this->handleRemoveLargestNode();
@@ -295,6 +300,7 @@ public:
             }
 
             this->treeSize --;
+
             return std::make_tuple(rootOwner->getKey(), rootOwner->getValue());
         }
 
