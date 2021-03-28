@@ -3,7 +3,6 @@ project(Trabalho1)
 
 set(CMAKE_CXX_STANDARD 17)
 
-find_package(GTest CONFIG REQUIRED)
 # Download and unpack googletest at configure time
 configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
 execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
@@ -30,7 +29,7 @@ add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
         EXCLUDE_FROM_ALL)
 
 # Now simply link against gtest or gtest_main as needed. Eg
-add_executable(Trabalho1 main.cpp trees/binarytrees.h trees/avltree.h datastructures.h tests/maptests.cpp trees/trees.h trees/redblacktree.h)
+add_executable(Trabalho1 main.cpp trees/binarytrees.h trees/avltree.h datastructures.h tests/maptests.cpp trees/trees.h trees/redblacktree.h trees/splaytree.h)
 
 target_link_libraries(Trabalho1 gtest_main)
 add_test(NAME example_test COMMAND Trabalho1)

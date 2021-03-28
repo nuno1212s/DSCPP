@@ -23,7 +23,7 @@ public:
     }
 
     void setColor(NodeColor color) {
-        std::cout << "Set color of " << *this->getKeyVal() << " to " << (color == RED ? "RED" : "BLACK") << std::endl;
+//        std::cout << "Set color of " << *this->getKeyVal() << " to " << (color == RED ? "RED" : "BLACK") << std::endl;
 
         this->color = color;
     }
@@ -42,7 +42,8 @@ template<typename T, typename V>
 static bool hasRedChild(RBNode<T, V> *node) {
     if (node == nullptr) return false;
 
-    return getNodeColor((RBNode<T, V>*) node->getRightChild()) == RED || getNodeColor((RBNode<T, V>*)node->getLeftChild()) == RED;
+    return getNodeColor((RBNode<T, V> *) node->getRightChild()) == RED ||
+           getNodeColor((RBNode<T, V> *) node->getLeftChild()) == RED;
 }
 
 template<typename T, typename V>
@@ -211,14 +212,14 @@ protected:
 
         if (getNodeColor(parent) != BLACK && node != this->getRoot()) {
 
-            auto grandParent = (RBNode<T, V>*) parent->getParent();
+            auto grandParent = (RBNode<T, V> *) parent->getParent();
 
             RBNode<T, V> *uncle;
 
             if (grandParent->getLeftChild() == parent) {
-                uncle = (RBNode<T, V>*) grandParent->getRightChild();
+                uncle = (RBNode<T, V> *) grandParent->getRightChild();
             } else {
-                uncle = (RBNode<T, V>*) grandParent->getLeftChild();
+                uncle = (RBNode<T, V> *) grandParent->getLeftChild();
             }
 
             if (getNodeColor(uncle) == RED) {
@@ -242,7 +243,7 @@ protected:
 
     void fixDoubleBlack(RBNode<T, V> *node) {
 
-        if (node == this->getRoot()) return;
+        if (node == this->getRoot() || node->getParent() == nullptr) return;
 
         RBNode<T, V> *parent = (RBNode<T, V> *) node->getParent();
 
@@ -261,12 +262,9 @@ protected:
         }
 
         if (sibling == nullptr) {
-            std::cout << "Sibling is null"<< std::endl;
             fixDoubleBlack(parent);
         } else {
             if (sibling->getColor() == RED) {
-
-                std::cout << "Sibling is RED"<< std::endl;
 
                 parent->setColor(RED);
                 sibling->setColor(BLACK);
@@ -279,14 +277,12 @@ protected:
 
                 fixDoubleBlack(node);
             } else {
-                std::cout << "Sibling is BLACK "<< std::endl;
                 //Sibling is BLACK
                 if (hasRedChild(sibling)) {
 
-                    std::cout << "Sibling has RED child "<< std::endl;
                     auto *siblingLeftChild = (RBNode<T, V> *) sibling->getLeftChild();
 
-                    auto *siblingRightChild = (RBNode<T, V>*) sibling->getRightChild();
+                    auto *siblingRightChild = (RBNode<T, V> *) sibling->getRightChild();
 
                     if (siblingRightChild != nullptr && siblingRightChild->getColor() == RED) {
 
@@ -302,7 +298,7 @@ protected:
                             sibling->setColor(parent->getColor());
                             rotateLeftP(parent);
                         }
-                    }else {
+                    } else {
                         if (siblingOnLeft) {
                             //Left Left rotation
                             siblingLeftChild->setColor(sibling->getColor());
@@ -320,8 +316,6 @@ protected:
 
                     parent->setColor(BLACK);
                 } else {
-
-                    std::cout << "Sibling does not have RED child"<< std::endl;
                     sibling->setColor(RED);
 
                     if (parent->getColor() == BLACK) {
@@ -346,7 +340,6 @@ public:
 
         auto result = this->removeNode(key);
 
-        std::cout << "Hello" << std::endl;
         if (result) {
             auto *replacement = (RBNode<T, V> *) std::get<2>(*result);
 
@@ -357,7 +350,6 @@ public:
                     replacement->setColor(BLACK);
                 }
             } else {
-                std::cout << "Double black" << std::endl;
                 //u is double black
                 if (replacement == nullptr) {
                     //If the node removed was a leaf, then the double black will be in a "null" leaf
@@ -370,14 +362,69 @@ public:
 
             return std::get<1>(std::get<0>(*result));
         }
+        return std::nullopt;
+    }
 
-        std::cout << "Failed" << std::endl;
+    std::optional<node_info<T, V>> popLargest() override {
+
+        if (this->rightMostNode != nullptr) {
+
+            auto result = this->popLargestNode();
+
+            std::unique_ptr<RBNode<T, V>> removed(static_cast<RBNode<T, V> *> (std::get<1>(result).release()));
+
+            auto *replacement = (RBNode<T, V> *) this->rightMostNode;
+
+            if (getNodeColor(replacement) == RED || getNodeColor(removed.get()) == RED) {
+                if (replacement != nullptr) {
+                    replacement->setColor(BLACK);
+                }
+            } else {
+                //u is double black
+                if (replacement == nullptr) {
+                    //If the node removed was a leaf, then the double black will be in a "null" leaf
+                    //So, use the removed node as an entry point
+                    fixDoubleBlack(removed.get());
+                } else {
+                    fixDoubleBlack(replacement);
+                }
+            }
+
+            return std::get<0>(result);
+        }
 
         return std::nullopt;
     }
 
-    int getTreeHeight() {
-        return 0;
+
+    std::optional<node_info<T, V>> popSmallest() override {
+
+        if (this->leftMostNode != nullptr) {
+
+            auto result = this->popSmallestNode();
+
+            std::unique_ptr<RBNode<T, V>> removed(static_cast<RBNode<T, V> *> (std::get<1>(result).release()));
+
+            auto *replacement = (RBNode<T, V> *) this->leftMostNode;
+
+            if (getNodeColor(replacement) == RED || getNodeColor(removed.get()) == RED) {
+                if (replacement != nullptr) {
+                    replacement->setColor(BLACK);
+                }
+            } else {
+                //u is double black
+                if (replacement == nullptr) {
+                    //If the node removed was a leaf, then the double black will be in a "null" leaf
+                    //So, use the removed node as an entry point
+                    fixDoubleBlack(removed.get());
+                } else {
+                    fixDoubleBlack(replacement);
+                }
+            }
+
+            return std::get<0>(result);
+        }
+        return std::nullopt;
     }
 
 };

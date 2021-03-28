@@ -89,13 +89,15 @@ public:
     void setLeftChild(std::unique_ptr<TreeNode<T, V>> node) {
         this->leftNode = std::move(node);
 
-        this->leftNode->setParent(this);
+        if (this->leftNode.get() != nullptr)
+            this->leftNode->setParent(this);
     }
 
     void setRightChild(std::unique_ptr<TreeNode<T, V>> node) {
         this->rightNode = std::move(node);
 
-        this->rightNode->setParent(this);
+        if (this->rightNode.get() != nullptr)
+            this->rightNode->setParent(this);
     }
 };
 
@@ -128,7 +130,9 @@ protected:
 
     void setRootNode(std::unique_ptr<TreeNode<T, V>> rootNode) {
         this->rootNode = std::move(rootNode);
-        this->rootNode->setParent(nullptr);
+
+        if (this->rootNode.get() != nullptr)
+            this->rootNode->setParent(nullptr);
     }
 
     void setLeftMostNode(TreeNode<T, V> *leftMost) {
@@ -219,6 +223,8 @@ protected:
 
                 currentRoot->setValue(std::move(value));
 
+                return currentRoot;
+
             } else if (*key < keyValue) {
                 currentRoot = currentRoot->getLeftChild();
             } else {
@@ -284,7 +290,8 @@ protected:
      * @param key
      * @return
      */
-    std::optional<std::tuple<node_info<T, V>, std::unique_ptr<TreeNode<T, V>>, TreeNode<T, V>*>> removeNode(const T &key) {
+    std::optional<std::tuple<node_info<T, V>, std::unique_ptr<TreeNode<T, V>>, TreeNode<T, V> *>>
+    removeNode(const T &key) {
 
         if (this->getRoot() == nullptr) {
             return std::nullopt;
@@ -434,13 +441,11 @@ protected:
 
             auto largest = this->rightMostNode;
 
-//            std::cout << "Removing largest, setting new largest to ";
+            //We don't have to check whether this node has a right child as it is always the right most node in the tree
 
             if (largest->getLeftChild() != nullptr) {
 
                 auto rightMost = getRightMostNodeInTree(largest->getLeftChild());
-
-//                std::cout << "left child " << *rightMost->getKey().get() << std::endl;
 
                 this->setRightMostNode(rightMost);
 
@@ -448,7 +453,6 @@ protected:
                 this->setRightMostNode(largest->getParent());
             }
         }
-
     }
 
     void handleRemoveSmallestNode() {
@@ -465,7 +469,6 @@ protected:
             } else {
                 this->setLeftMostNode(smallest->getParent());
             }
-
         }
     }
 
@@ -479,9 +482,12 @@ protected:
         //remove the node from the tree
         std::unique_ptr<TreeNode<T, V>> rightMost;
 
-        if (rightMostNode->getParent() == nullptr) {
+        if (rightMostNodePointer->getParent() == nullptr) {
             rightMost = this->getRootNodeOwnership();
 
+            if (rightMost->getLeftChild() != nullptr) {
+                this->setRootNode(rightMost->getLeftNodeOwnership());
+            }
         } else {
             rightMost = rightMostNodePointer->getParent()->getRightNodeOwnership();
 
@@ -506,19 +512,22 @@ protected:
 
         auto leftMostNodePointer = this->leftMostNode;
 
-        //Set the new largest node
+        //Set the new smallest node
         this->handleRemoveSmallestNode();
 
         //remove the node from the tree
         std::unique_ptr<TreeNode<T, V>> leftMost;
 
-        if (rightMostNode->getParent() == nullptr) {
+        if (leftMostNodePointer->getParent() == nullptr) {
             leftMost = this->getRootNodeOwnership();
 
+            if (leftMost->getRightChild() != nullptr) {
+                this->setRootNode(leftMost->getRightNodeOwnership());
+            }
         } else {
             leftMost = leftMostNodePointer->getParent()->getLeftNodeOwnership();
 
-            //Since this is the right most node, we don't even need to check for right children
+            //Since this is the left most node, we don't even need to check for left children
             if (leftMost->getRightChild() != nullptr) {
                 leftMost->getParent()->setLeftChild(std::move(leftMost->getRightNodeOwnership()));
             }
@@ -572,13 +581,7 @@ protected:
         return left;
     }
 
-public:
-
-    int size() override {
-        return this->treeSize;
-    }
-
-    std::optional<std::shared_ptr<V>> get(const T &key) override {
+    TreeNode<T, V> *getNodeBy(const T &key) {
 
         if (this->getRoot() != nullptr) {
 
@@ -589,7 +592,7 @@ public:
                 auto rootKey = *rootRef->getKeyVal();
 
                 if (rootKey == key) {
-                    return rootRef->getValue();
+                    return rootRef;
                 } else if (key < rootKey) {
                     rootRef = rootRef->getLeftChild();
                 } else {
@@ -600,27 +603,31 @@ public:
 
         }
 
+        return nullptr;
+    }
+
+public:
+
+    int size() override {
+        return this->treeSize;
+    }
+
+    std::optional<std::shared_ptr<V>> get(const T &key) override {
+
+        auto result = this->getNodeBy(key);
+
+        if (result != nullptr) {
+            return (result)->getValue();
+        }
+
         return std::nullopt;
     }
 
     bool hasKey(const T &key) override {
+        auto result = this->getNodeBy(key);
 
-        if (this->getRoot() != nullptr) {
-
-            TreeNode<T, V> *rootRef = this->getRoot();
-
-            while (rootRef != nullptr) {
-
-                auto rootKey = (*rootRef->getKeyVal());
-
-                if (rootKey == key) {
-                    return true;
-                } else if (key < rootKey) {
-                    rootRef = rootRef->getLeftChild();
-                } else {
-                    rootRef = rootRef->getRightChild();
-                }
-            }
+        if (result != nullptr) {
+            return true;
         }
 
         return false;

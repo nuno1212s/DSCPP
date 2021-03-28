@@ -180,7 +180,7 @@ private:
 public:
     AvlTree() : BinarySearchTree<T, V>() {}
 
-    int getTreeHeight() override {
+    int getTreeHeight() {
         return ((AVLNode<T, V>*) this->getRoot())->getHeight();
     }
 
@@ -218,7 +218,7 @@ public:
 
             auto result = this->popSmallestNode();
 
-            updateBalance((AVLNode<T, V> *) std::get<1>(result)->getParent());
+            updateBalance((AVLNode<T, V> *) this->leftMostNode);
 
             return std::get<0>(result);
         }
@@ -231,10 +231,11 @@ public:
 
             auto result = this->popLargestNode();
 
-            updateBalance((AVLNode<T, V> *) std::get<1>(result)->getParent());
+            updateBalance((AVLNode<T, V> *) this->rightMostNode);
 
             return std::get<0>(result);
         }
+
         return std::nullopt;
     }
 };
