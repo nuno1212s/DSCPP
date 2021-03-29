@@ -119,9 +119,7 @@ TEST(AVLTest, TestRemove) {
     map->add(std::make_shared<int>(3), value);
     map->add(std::make_shared<int>(5), value);
 
-
     map->remove(1);
-
 
     auto *root = map->getRoot();
 
