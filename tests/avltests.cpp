@@ -4,7 +4,7 @@
 /**
  * Tests all the possible rotations,
  * If these tests all pass, then because each child makes up the root of a new AVL tree,
- * We can assume that these properties will be maintained for a tree of any height
+ * We can assume that these properties will be maintained for a tree of any level
  */
 
 TEST(AVLTest, TestLRotation) {

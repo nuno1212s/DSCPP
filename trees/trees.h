@@ -32,6 +32,7 @@ public:
     virtual std::optional<node_info<T, V>> popSmallest() = 0;
 
     virtual std::optional<node_info<T, V>> popLargest() = 0;
+
 };
 
 #endif //TRABALHO1_TREES_H

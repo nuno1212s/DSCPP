@@ -142,6 +142,8 @@ private:
             }
 
             return std::make_tuple(rootRef, previous);
+        } else {
+            return std::make_tuple(nullptr, nullptr);
         }
     }
 
@@ -150,7 +152,7 @@ public:
 protected:
     std::unique_ptr<TreeNode<T, V>>
     initializeNode(std::shared_ptr<T> key, std::shared_ptr<V> value, TreeNode<T, V> *parent) override {
-        return std::make_unique<TreeNode<T, V>>(key, value, parent);
+        return std::make_unique<TreeNode<T, V>>(std::move(key), std::move(value), parent);
     }
 
 public:

@@ -22,12 +22,15 @@ protected:
 
 
 public:
-    TreeNode(std::shared_ptr<T> key, std::shared_ptr<V> value, TreeNode<T, V> *parent) : key(key), value(value),
+    TreeNode(std::shared_ptr<T> key, std::shared_ptr<V> value, TreeNode<T, V> *parent) : key(std::move(key)),
+                                                                                         value(std::move(value)),
                                                                                          parent(parent),
                                                                                          leftNode(nullptr),
                                                                                          rightNode(nullptr) {}
 
     ~TreeNode() {
+
+        std::cout << "Deleted node with key " << *getKeyVal() << std::endl;
 
         //Delete our references to these nodes
         this->key.reset();
@@ -47,11 +50,11 @@ public:
     }
 
     std::shared_ptr<T> getKey() const {
-        return std::shared_ptr<T>(key);
+        return key;
     }
 
     std::shared_ptr<V> getValue() const {
-        return std::shared_ptr<V>(value);
+        return value;
     }
 
     void setKey(std::shared_ptr<T> key) {
@@ -112,9 +115,7 @@ protected:
     int treeSize;
 
     BinarySearchTree() : treeSize(0), rootNode(nullptr),
-                         leftMostNode(nullptr), rightMostNode(nullptr) {
-
-    }
+                         leftMostNode(nullptr), rightMostNode(nullptr) {}
 
     ~BinarySearchTree() {
         this->rootNode.reset();
@@ -237,7 +238,7 @@ protected:
 
         T *keyRef = key.get();
 
-        std::unique_ptr<TreeNode<T, V>> newNode = initializeNode(key, value, parent);
+        std::unique_ptr<TreeNode<T, V>> newNode = initializeNode(std::move(key), std::move(value), parent);
 
         TreeNode<T, V> *newNodeP = newNode.get();
 
@@ -398,7 +399,7 @@ protected:
 
                         return std::make_tuple(nodeInfo, std::move(child), nullptr);
                     } else {
-                        //Node is the root and has no leaves so it must be the only node in the tree
+                        //SkipNode is the root and has no leaves so it must be the only node in the tree
                         return std::make_tuple(nodeInfo, std::move(this->getRootNodeOwnership()), nullptr);
                     }
                 }
@@ -737,7 +738,6 @@ public:
 
         return vector;
     }
-
 
     TreeNode<T, V> *getRoot() {
         return this->rootNode.get();

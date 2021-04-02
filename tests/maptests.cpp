@@ -3,13 +3,14 @@
 #include "../trees/avltree.h"
 #include "../trees/redblacktree.h"
 #include "../trees/splaytree.h"
+#include "../trees/treaps.h"
 #include "gtest/gtest.h"
 #include <chrono>
 
 //#define TEST_SIZE 1048576
 #define TEST_SIZE 8
 
-void insert(TreeMap<int, int> *map) {
+void insert(Map<int, int> *map) {
 
     std::shared_ptr<int> value = std::make_shared<int>(42);
 
@@ -23,7 +24,7 @@ void insert(TreeMap<int, int> *map) {
 
 }
 
-void insertBackwards(TreeMap<int, int> *map) {
+void insertBackwards(Map<int, int> *map) {
 
     std::shared_ptr<int> value = std::make_shared<int>(42);
 
@@ -36,7 +37,7 @@ void insertBackwards(TreeMap<int, int> *map) {
     }
 }
 
-void insertAndContains(TreeMap<int, int> *map) {
+void insertAndContains(Map<int, int> *map) {
     std::shared_ptr<int> value = std::make_shared<int>(42);
 
     auto start = std::chrono::high_resolution_clock::now();
@@ -61,7 +62,7 @@ void insertAndContains(TreeMap<int, int> *map) {
               << duration.count() << "/" << TEST_SIZE << " micros per operation." << std::endl;
 }
 
-void insertAndRemove(TreeMap<int, int> *map) {
+void insertAndRemove(Map<int, int> *map) {
 
     insert(map);
 
@@ -85,7 +86,7 @@ void insertAndRemove(TreeMap<int, int> *map) {
     ASSERT_EQ(map->size(), 0);
 }
 
-void insertAndRemoveBackwards(TreeMap<int, int> *map) {
+void insertAndRemoveBackwards(Map<int, int> *map) {
 
     insert(map);
 
@@ -146,7 +147,7 @@ void insertAndPopBackwards(TreeMap<int, int> *map) {
     ASSERT_EQ(map->size(), 0);
 }
 
-TEST(AVLTest, InsertAndContains) {
+TEST(TreeTest, InsertAndContains) {
 
     std::unique_ptr<TreeMap<int, int>> map = std::make_unique<AvlTree<int, int>>();
 
@@ -154,7 +155,7 @@ TEST(AVLTest, InsertAndContains) {
 
 }
 
-TEST(AVLTest, InsertAndRemove) {
+TEST(TreeTest, InsertAndRemove) {
 
     std::unique_ptr<TreeMap<int, int>> map = std::make_unique<AvlTree<int, int>>();
 
@@ -173,7 +174,7 @@ TEST(AVLTest, InsertAndRemove) {
     insertAndRemove(map.get());
 }
 
-TEST(AVLTest, InsertAndRemoveBackwards) {
+TEST(TreeTest, InsertAndRemoveBackwards) {
 
     std::unique_ptr<TreeMap<int, int>> map = std::make_unique<AvlTree<int, int>>();
 
@@ -188,6 +189,12 @@ TEST(AVLTest, InsertAndRemoveBackwards) {
     map.reset();
 
     map = std::make_unique<SplayTree<int, int>>();
+
+    insertAndRemoveBackwards(map.get());
+
+    map.reset();
+
+    map = std::make_unique<Treap<int, int>>();
 
     insertAndRemoveBackwards(map.get());
 }

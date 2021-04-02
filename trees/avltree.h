@@ -77,20 +77,17 @@ private:
         auto parent = root->getParent();
 
         if (parent == nullptr) {
-            std::unique_ptr<AVLNode<T, V>> rootOwner(
-                    static_cast<AVLNode<T, V> *>(this->getRootNodeOwnership().release()));
+            std::unique_ptr<TreeNode<T, V>> rootOwner = this->getRootNodeOwnership();
 
             this->setRootNode(rotateRight(std::move(rootOwner)));
 
         } else {
             if (parent->getLeftChild() == root) {
-                std::unique_ptr<AVLNode<T, V>> leftOwner(
-                        static_cast<AVLNode<T, V> *>(parent->getLeftNodeOwnership().release()));
+                std::unique_ptr<TreeNode<T, V>> leftOwner = parent->getLeftNodeOwnership();
 
                 parent->setLeftChild(rotateRight(std::move(leftOwner)));
             } else {
-                std::unique_ptr<AVLNode<T, V>> rightOwner(
-                        static_cast<AVLNode<T, V> *>(parent->getRightNodeOwnership().release()));
+                std::unique_ptr<TreeNode<T, V>> rightOwner = parent->getRightNodeOwnership();
 
                 parent->setRightChild(rotateRight(std::move(rightOwner)));
             }
@@ -102,19 +99,16 @@ private:
         auto parent = root->getParent();
 
         if (parent == nullptr) {
-            std::unique_ptr<AVLNode<T, V>> rootOwner(
-                    static_cast<AVLNode<T, V> *>(this->getRootNodeOwnership().release()));
+            std::unique_ptr<TreeNode<T, V>> rootOwner = this->getRootNodeOwnership();
 
             this->setRootNode(rotateLeft(std::move(rootOwner)));
         } else {
 
             if (parent->getLeftChild() == root) {
-                std::unique_ptr<AVLNode<T, V>> leftOwner(
-                        static_cast<AVLNode<T, V> *>(parent->getLeftNodeOwnership().release()));
+                std::unique_ptr<TreeNode<T, V>> leftOwner = parent->getLeftNodeOwnership();
                 parent->setLeftChild(rotateLeft(std::move(leftOwner)));
             } else {
-                std::unique_ptr<AVLNode<T, V>> rightOwner(
-                        static_cast<AVLNode<T, V> *>(parent->getRightNodeOwnership().release()));
+                std::unique_ptr<TreeNode<T, V>> rightOwner = parent->getRightNodeOwnership();
 
                 parent->setRightChild(rotateLeft(std::move(rightOwner)));
             }
@@ -129,8 +123,7 @@ private:
             if (getBalance(leftChild) >= 0) {
                 rotateRightP(root);
             } else {
-                std::unique_ptr<AVLNode<T, V>> leftChildOwner(
-                        static_cast<AVLNode<T, V> *>(root->getLeftNodeOwnership().release()));
+                std::unique_ptr<TreeNode<T, V>> leftChildOwner = root->getLeftNodeOwnership();
 
                 auto result = rotateLeft(std::move(leftChildOwner));
 
@@ -146,8 +139,7 @@ private:
             if (getBalance(rightChild) <= 0) {
                 rotateLeftP(root);
             } else {
-                std::unique_ptr<AVLNode<T, V>> rightChildOwner(
-                        static_cast<AVLNode<T, V> *>(root->getRightNodeOwnership().release()));
+                std::unique_ptr<TreeNode<T, V>> rightChildOwner = root->getRightNodeOwnership();
 
                 auto result = rotateRight(std::move(rightChildOwner));
 
@@ -160,20 +152,21 @@ private:
 
     void updateBalance(AVLNode<T, V> *leaf) {
 
-        if (leaf == nullptr) return;
+        while (leaf != nullptr) {
 
-        auto leftHeight = getHeight((AVLNode<T, V> *) leaf->getLeftChild());
-        auto rightHeight = getHeight((AVLNode<T, V> *) leaf->getRightChild());
+            auto leftHeight = getHeight((AVLNode<T, V> *) leaf->getLeftChild());
+            auto rightHeight = getHeight((AVLNode<T, V> *) leaf->getRightChild());
 
-        leaf->setHeight(1 + std::max(leftHeight, rightHeight));
+            leaf->setHeight(1 + std::max(leftHeight, rightHeight));
 
-        int bal = leftHeight - rightHeight;
+            int bal = leftHeight - rightHeight;
 
-        if (bal > 1 || bal < -1) {
-            rebalance(leaf, bal);
+            if (bal > 1 || bal < -1) {
+                rebalance(leaf, bal);
+            }
+
+            leaf = (AVLNode<T, V> *) leaf->getParent();
         }
-
-        updateBalance((AVLNode<T, V> *) leaf->getParent());
 
     }
 
@@ -186,8 +179,11 @@ public:
 
     std::unique_ptr<TreeNode<T, V>> initializeNode(std::shared_ptr<T> key, std::shared_ptr<V> value,
                                                    TreeNode<T, V> *parent) override {
-        return std::unique_ptr<TreeNode<T, V>>(
-                (TreeNode<T, V> *) new AVLNode<T, V>(key, value, (AVLNode<T, V> *) parent));
+
+        auto node = std::make_unique<AVLNode<T, V>>(std::move(key), std::move(value),
+                (AVLNode<T, V> *) parent);
+
+        return std::move(node);
     }
 
     void add(std::shared_ptr<T> key, std::shared_ptr<V> value) override {

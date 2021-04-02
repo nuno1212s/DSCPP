@@ -53,7 +53,7 @@ protected:
     std::unique_ptr<TreeNode<T, V>>
     initializeNode(std::shared_ptr<T> key, std::shared_ptr<V> value, TreeNode<T, V> *parent) override {
 
-        //A Node always starts as a RED node
+        //A SkipNode always starts as a RED node
         auto node = std::make_unique<RBNode<T, V>>(key, value, parent, NodeColor::RED);
 
         return std::move(node);
@@ -64,20 +64,17 @@ protected:
         auto parent = root->getParent();
 
         if (parent == nullptr) {
-            std::unique_ptr<RBNode<T, V>> rootOwner(
-                    static_cast<RBNode<T, V> *>(this->getRootNodeOwnership().release()));
+            std::unique_ptr<TreeNode<T, V>> rootOwner = this->getRootNodeOwnership();
 
             this->setRootNode(this->rotateRight(std::move(rootOwner)));
 
         } else {
             if (parent->getLeftChild() == root) {
-                std::unique_ptr<RBNode<T, V>> leftOwner(
-                        static_cast<RBNode<T, V> *>(parent->getLeftNodeOwnership().release()));
+                std::unique_ptr<TreeNode<T, V>> leftOwner = parent->getLeftNodeOwnership();
 
                 parent->setLeftChild(this->rotateRight(std::move(leftOwner)));
             } else {
-                std::unique_ptr<RBNode<T, V>> rightOwner(
-                        static_cast<RBNode<T, V> *>(parent->getRightNodeOwnership().release()));
+                std::unique_ptr<TreeNode<T, V>> rightOwner = parent->getRightNodeOwnership();
 
                 parent->setRightChild(this->rotateRight(std::move(rightOwner)));
             }
@@ -89,19 +86,17 @@ protected:
         auto parent = root->getParent();
 
         if (parent == nullptr) {
-            std::unique_ptr<RBNode<T, V>> rootOwner(
-                    static_cast<RBNode<T, V> *>(this->getRootNodeOwnership().release()));
+            std::unique_ptr<TreeNode<T, V>> rootOwner = this->getRootNodeOwnership();
 
             this->setRootNode(this->rotateLeft(std::move(rootOwner)));
         } else {
 
             if (parent->getLeftChild() == root) {
-                std::unique_ptr<RBNode<T, V>> leftOwner(
-                        static_cast<RBNode<T, V> *>(parent->getLeftNodeOwnership().release()));
+                std::unique_ptr<TreeNode<T, V>> leftOwner = parent->getLeftNodeOwnership();
+
                 parent->setLeftChild(this->rotateLeft(std::move(leftOwner)));
             } else {
-                std::unique_ptr<RBNode<T, V>> rightOwner(
-                        static_cast<RBNode<T, V> *>(parent->getRightNodeOwnership().release()));
+                std::unique_ptr<TreeNode<T, V>> rightOwner = parent->getRightNodeOwnership();
 
                 parent->setRightChild(this->rotateLeft(std::move(rightOwner)));
             }
@@ -112,7 +107,7 @@ protected:
 
         auto parent = (RBNode<T, V> *) node->getParent();
 
-        //We will always have a grand parent because if the tree height is less than 2,
+        //We will always have a grand parent because if the tree level is less than 2,
         //Then we only have the root (black), one red level and the NULL leaves
         auto grandParent = (RBNode<T, V> *) parent->getParent();
 
@@ -157,7 +152,7 @@ protected:
     void handleRightCase(RBNode<T, V> *node) {
         auto parent = (RBNode<T, V> *) node->getParent();
 
-        //We will always have a grand parent because if the tree height is less than 2,
+        //We will always have a grand parent because if the tree level is less than 2,
         //Then we only have the root (black), one red level and the NULL leaves
         auto grandParent = (RBNode<T, V> *) parent->getParent();
 
