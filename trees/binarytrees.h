@@ -353,23 +353,17 @@ protected:
                             auto ownership = root->getParent()->getLeftNodeOwnership();
 
                             root->getParent()->setLeftChild(std::move(child));
-//                            std::cout << "moved left child" << std::endl;
-
                             return std::make_tuple(nodeInfo, std::move(ownership), childP);
                         } else {
                             auto ownership = root->getParent()->getRightNodeOwnership();
 
                             root->getParent()->setRightChild(std::move(child));
 
-//                            std::cout << "moved right child" << std::endl;
-
                             return std::make_tuple(nodeInfo, std::move(ownership), childP);
                         }
                     }
                 } else if (toReplace != nullptr && toReplace != root) {
                     //toReplace is the left most node of the right sub tree
-
-//                    std::cout << "Replaced " << *toReplace->getKeyVal() << " with " << *root->getKeyVal() << std::endl;
 
                     //Set the root as the toReplace values
                     root->setKey(toReplace->getKey());
@@ -382,8 +376,6 @@ protected:
                 } else {
 
                     this->treeSize--;
-
-//                    std::cout << "To replace is null or matches root" << std::endl;
 
                     if (root->getParent() != nullptr) {
                         //This node is a leaf and has a parent

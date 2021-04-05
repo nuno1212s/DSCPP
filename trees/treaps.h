@@ -110,11 +110,10 @@ private:
             if (leaf->getHeapWeight() > ((TreapNode<T, V> *) parent)->getHeapWeight()) {
                 rotateLeftP(parent);
 
+                //The leaf is now the parent, so we recursively call this rotation
                 heapify(leaf);
             }
-
         }
-
     }
 
     /**

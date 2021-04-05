@@ -9,6 +9,7 @@
 //Since most cache lines are around 64 bytes long, we can keep an array of 8 64 bit pointers
 //To improve cache performance
 #define SKIP_LIST_HEIGHT_LIMIT 8
+#define FIRST_BIT_MASK 0x80000000
 
 template<typename T, typename V>
 class SkipNode {
@@ -72,8 +73,6 @@ public:
 
 };
 
-static unsigned int firstBitMask = 0x80000000;
-
 template<typename T, typename V>
 class SkipList : public Map<T, V> {
 
@@ -89,11 +88,11 @@ private:
     int listSize;
 
 protected:
-    inline int getListLevel() const {
+    virtual int getListLevel() const {
         return this->listLevel;
     }
 
-    void setListLevel(int listLevel) {
+    virtual void setListLevel(int listLevel) {
         this->listLevel = listLevel;
     }
 
@@ -105,7 +104,7 @@ protected:
 
         int level = 0;
 
-        while ((random & firstBitMask) != 0 && level < SKIP_LIST_HEIGHT_LIMIT) {
+        while ((random & FIRST_BIT_MASK) != 0 && level < SKIP_LIST_HEIGHT_LIMIT) {
             level++;
 
             random = random << 1;
@@ -116,11 +115,11 @@ protected:
         return level;
     }
 
-    std::unique_ptr<SkipNode<T, V>> initializeNode(std::shared_ptr<T> key, std::shared_ptr<V> value) {
+    virtual std::unique_ptr<SkipNode<T, V>> initializeNode(std::shared_ptr<T> key, std::shared_ptr<V> value) {
         return std::make_unique<SkipNode<T, V>>(std::move(key), std::move(value), generateLevel());
     }
 
-    std::unique_ptr<SkipNode<T, V>> initializeNodeRoot(int level) {
+    virtual std::unique_ptr<SkipNode<T, V>> initializeNodeRoot(int level) {
         return std::make_unique<SkipNode<T, V>>(std::shared_ptr<T>(), std::shared_ptr<V>(), level);
     }
 
@@ -179,11 +178,18 @@ public:
         this->generator = std::mt19937(randomEngine());
     }
 
+    SkipList(std::unique_ptr<SkipNode<T, V>> root) : randomEngine(),
+                  rootNode(std::move(root)),
+                  listSize(0),
+                  listLevel(0) {
+        this->generator = std::mt19937(randomEngine());
+    }
+
     ~SkipList() {
         this->rootNode.reset();
     }
 
-    void add(std::shared_ptr<T> key, std::shared_ptr<V> value) override {
+    virtual void add(std::shared_ptr<T> key, std::shared_ptr<V> value) override {
 
         SkipNode<T, V> *update[SKIP_LIST_HEIGHT_LIMIT] = {nullptr};
 
@@ -228,11 +234,11 @@ public:
         }
     }
 
-    bool hasKey(const T &key) override {
+    virtual bool hasKey(const T &key) override {
         return findNode(key, nullptr) != nullptr;
     }
 
-    std::optional<std::shared_ptr<V>> get(const T &key) override {
+    virtual std::optional<std::shared_ptr<V>> get(const T &key) override {
         SkipNode<T, V> *result = findNode(key, nullptr);
 
         if (result != nullptr) {
@@ -246,7 +252,7 @@ public:
         return this->listSize;
     }
 
-    std::optional<std::shared_ptr<V>> remove(const T &key) override {
+    virtual std::optional<std::shared_ptr<V>> remove(const T &key) override {
         SkipNode<T, V> *update[SKIP_LIST_HEIGHT_LIMIT] = {nullptr};
 
         SkipNode<T, V> *current = findNode(key, update);
@@ -316,8 +322,6 @@ public:
 
         return valueVector;
     }
-
-
 };
 
 #endif //TRABALHO1_SKIPLIST_H

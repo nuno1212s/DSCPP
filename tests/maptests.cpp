@@ -5,6 +5,7 @@
 #include "../trees/splaytree.h"
 #include "../trees/treaps.h"
 #include "gtest/gtest.h"
+#include "mutex"
 #include <chrono>
 
 //#define TEST_SIZE 1048576
@@ -241,6 +242,33 @@ TEST(TreeTest, InsertAndPopBackwards) {
     map = std::make_unique<SplayTree<int, int>>();
 
     insertAndPopBackwards(map.get());
+}
+
+class DestructionTest {
+
+private:
+    int i;
+
+public:
+
+    explicit DestructionTest(int i) : i(i) {}
+
+    ~DestructionTest() {
+        std::cout << "LOL " << i << std::endl;
+    }
+
+};
+
+TEST(test, random) {
+
+    std::vector<DestructionTest> vector;
+
+    vector.reserve(10);
+
+    for (int i = 0; i < 10; i++) {
+        vector.emplace_back(i);
+    }
+
 }
 
 

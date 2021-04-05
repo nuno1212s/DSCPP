@@ -17,6 +17,7 @@ public:
 
     virtual std::vector<std::shared_ptr<T>> rangeSearch(const T &base, const T &max) = 0;
 
+
 };
 
 template<typename T, typename V>
