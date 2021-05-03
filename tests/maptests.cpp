@@ -112,7 +112,7 @@ void insertAndRemoveBackwards(Map<int, int> *map) {
     ASSERT_EQ(map->size(), 0);
 }
 
-void insertAndPop(TreeMap<int, int> *map) {
+void insertAndPop(OrderedMap<int, int> *map) {
 
     insert(map);
 
@@ -130,7 +130,7 @@ void insertAndPop(TreeMap<int, int> *map) {
 }
 
 
-void insertAndPopBackwards(TreeMap<int, int> *map) {
+void insertAndPopBackwards(OrderedMap<int, int> *map) {
 
     insert(map);
 
@@ -150,7 +150,7 @@ void insertAndPopBackwards(TreeMap<int, int> *map) {
 
 TEST(TreeTest, InsertAndContains) {
 
-    std::unique_ptr<TreeMap<int, int>> map = std::make_unique<AvlTree<int, int>>();
+    std::unique_ptr<OrderedMap<int, int>> map = std::make_unique<AvlTree<int, int>>();
 
     insertAndContains(map.get());
 
@@ -158,7 +158,7 @@ TEST(TreeTest, InsertAndContains) {
 
 TEST(TreeTest, InsertAndRemove) {
 
-    std::unique_ptr<TreeMap<int, int>> map = std::make_unique<AvlTree<int, int>>();
+    std::unique_ptr<OrderedMap<int, int>> map = std::make_unique<AvlTree<int, int>>();
 
     insertAndRemove(map.get());
 
@@ -177,7 +177,7 @@ TEST(TreeTest, InsertAndRemove) {
 
 TEST(TreeTest, InsertAndRemoveBackwards) {
 
-    std::unique_ptr<TreeMap<int, int>> map = std::make_unique<AvlTree<int, int>>();
+    std::unique_ptr<OrderedMap<int, int>> map = std::make_unique<AvlTree<int, int>>();
 
     insertAndRemoveBackwards(map.get());
 
@@ -202,7 +202,7 @@ TEST(TreeTest, InsertAndRemoveBackwards) {
 
 TEST(TreeTest, InsertAndPopInOrder) {
 
-    std::unique_ptr<TreeMap<int, int>> map = std::make_unique<AvlTree<int, int>>();
+    std::unique_ptr<OrderedMap<int, int>> map = std::make_unique<AvlTree<int, int>>();
 
     insertAndPop(map.get());
 
@@ -223,7 +223,7 @@ TEST(TreeTest, InsertAndPopInOrder) {
 
 TEST(TreeTest, InsertAndPopBackwards) {
 
-    std::unique_ptr<TreeMap<int, int>> map = std::make_unique<AvlTree<int, int>>();
+    std::unique_ptr<OrderedMap<int, int>> map = std::make_unique<AvlTree<int, int>>();
 
     insertAndPopBackwards(map.get());
 

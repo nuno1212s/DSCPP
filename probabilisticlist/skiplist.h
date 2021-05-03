@@ -25,7 +25,8 @@ protected:
     int level;
 
 public:
-    SkipNode(std::shared_ptr<T> key, std::shared_ptr<V> value, int level) : key(std::move(key)), value(std::move(value)),
+    SkipNode(std::shared_ptr<T> key, std::shared_ptr<V> value, int level) : key(std::move(key)),
+                                                                            value(std::move(value)),
                                                                             height_levels(SKIP_LIST_HEIGHT_LIMIT),
                                                                             level(level) {
     }
@@ -74,7 +75,7 @@ public:
 };
 
 template<typename T, typename V>
-class SkipList : public Map<T, V> {
+class SkipList : public OrderedMap<T, V> {
 
 private:
     std::random_device randomEngine;
@@ -83,9 +84,11 @@ private:
 
     std::unique_ptr<SkipNode<T, V>> rootNode;
 
-    int listLevel;
+    SkipNode<T, V> *lastNode;
 
-    int listSize;
+    unsigned int listLevel;
+
+    unsigned int listSize;
 
 protected:
     virtual int getListLevel() const {
@@ -174,14 +177,16 @@ public:
     SkipList() : randomEngine(),
                  rootNode(initializeNodeRoot(SKIP_LIST_HEIGHT_LIMIT)),
                  listSize(0),
-                 listLevel(0) {
+                 listLevel(0),
+                 lastNode(nullptr) {
         this->generator = std::mt19937(randomEngine());
     }
 
     SkipList(std::unique_ptr<SkipNode<T, V>> root) : randomEngine(),
-                  rootNode(std::move(root)),
-                  listSize(0),
-                  listLevel(0) {
+                                                     rootNode(std::move(root)),
+                                                     listSize(0),
+                                                     listLevel(0),
+                                                     lastNode(nullptr) {
         this->generator = std::mt19937(randomEngine());
     }
 
@@ -193,7 +198,7 @@ public:
 
         SkipNode<T, V> *update[SKIP_LIST_HEIGHT_LIMIT] = {nullptr};
 
-        const T& keyRef = *key;
+        const T &keyRef = *key;
 
         SkipNode<T, V> *current = findNode(keyRef, update);
 
@@ -227,6 +232,10 @@ public:
                 }
             }
 
+            if (createdNode->getNextNode(0) == nullptr) {
+                this->lastNode = createdNode;
+            }
+
             this->listSize++;
 
         } else {
@@ -235,20 +244,23 @@ public:
     }
 
     virtual bool hasKey(const T &key) override {
-        return findNode(key, nullptr) != nullptr;
+
+        SkipNode<T, V>* node = findNode(key, nullptr);
+
+        return node != nullptr && (*node->getKeyVal()) == key;
     }
 
     virtual std::optional<std::shared_ptr<V>> get(const T &key) override {
         SkipNode<T, V> *result = findNode(key, nullptr);
 
-        if (result != nullptr) {
+        if (result != nullptr && (*result->getKeyVal()) == key) {
             return result->getValue();
         }
 
         return std::nullopt;
     }
 
-    int size() override {
+    unsigned int size() override {
         return this->listSize;
     }
 
@@ -278,11 +290,43 @@ public:
                 }
             }
 
+            if (current == this->lastNode) {
+                this->lastNode = update[0];
+            }
+
             this->listSize--;
 
             while (getListLevel() > 0 && getRoot()->getNextNode(getListLevel()) == nullptr) {
                 setListLevel(getListLevel() - 1);
             }
+        }
+    }
+
+    std::optional<node_info<T, V>> peekLargest() override {
+
+        if (this->lastNode == nullptr || this->lastNode == getRoot()) {
+            return std::nullopt;
+        } else {
+
+            auto node = std::make_tuple(this->lastNode->getKey(), this->lastNode->getValue());
+
+            return node;
+        }
+    }
+
+    std::optional<node_info<T, V>> peekSmallest() override {
+
+        auto *root = this->getRoot();
+
+        if (root->getNextNode(0) == nullptr) {
+            return std::nullopt;
+        } else {
+
+            auto *currentNode = root->getNextNode(0);
+
+            auto nodeValue = std::make_tuple(currentNode->getKey(), currentNode->getValue());
+
+            return nodeValue;
         }
     }
 
@@ -316,11 +360,68 @@ public:
     }
 
     std::unique_ptr<std::vector<node_info<T, V>>> entries() override {
-        auto valueVector = std::make_unique<std::vector<node_info<T,V>>>(this->size());
+        auto valueVector = std::make_unique<std::vector<node_info<T, V>>>(this->size());
 
         traverseList(valueVector.get());
 
         return valueVector;
+    }
+
+    std::unique_ptr<std::vector<node_info<T, V>>> rangeSearch(const T &base, const T &max) override {
+
+        SkipNode<T, V> *node = findNode(base, nullptr);
+
+        std::unique_ptr<std::vector<node_info<T, V>>> result = std::make_unique<std::vector<node_info<T, V>>>();
+
+        //Since we know that findNode returns a node such that node.getKey() >= base, we
+        //Want to get all of the nodes until we reach the end of our search space
+        while (node != nullptr && *node->getKeyVal() <= max) {
+            result.get()->push_back(std::make_tuple(node->getKey(), node->getValue()));
+
+            //Continue searching the list
+            node = node->getNextNode(0);
+        }
+
+        return std::move(result);
+    }
+
+    std::optional<node_info<T, V>> popSmallest() override {
+        auto *root = this->getRoot();
+
+        if (root->getNextNode(0) == nullptr) {
+            return std::nullopt;
+        } else {
+            auto *currentNode = root->getNextNode(0);
+
+            std::shared_ptr<T> key = currentNode->getKey();
+
+            auto returned = remove(*currentNode->getKeyVal());
+
+            if (returned) {
+                return std::make_tuple(key, *returned);
+            } else {
+                return std::nullopt;
+            }
+        }
+    }
+
+    std::optional<node_info<T, V>> popLargest() override {
+
+        if (this->lastNode == nullptr || this->lastNode == getRoot()) {
+            return std::nullopt;
+        } else {
+            auto *last = this->lastNode;
+
+            std::shared_ptr<T> key = last->getKey();
+
+            auto returned = remove(*last->getKeyVal());
+
+            if (returned) {
+                return std::make_tuple(key, *returned);
+            } else {
+                return std::nullopt;
+            }
+        }
     }
 };
 

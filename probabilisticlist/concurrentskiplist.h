@@ -9,7 +9,7 @@ template<typename T, typename V>
 class ConcurrentSkipNode : public SkipNode<T, V> {
 
 private:
-    //This is used to make the remove operations appear atomic
+    //This is used to make the remove operations appear atomic (When the node is marked, it is in the process of being removed
     bool marked;
     //This is the linearization point for the add operation
     //It is true when all of the pointers from the node level have been filled
@@ -18,15 +18,17 @@ private:
 
 public:
 
-    ConcurrentSkipNode(std::shared_ptr<T> key, std::shared_ptr<V> value, int level, bool fullyLinked) : SkipNode<T, V>(std::move(key),
-                                                                                                     std::move(value),
-                                                                                                     level),
-                                                                                      marked(false),
+    ConcurrentSkipNode(std::shared_ptr<T> key, std::shared_ptr<V> value, int level, bool fullyLinked) : SkipNode<T, V>(
+            std::move(key),
+            std::move(value),
+            level),
+                                                                                                        marked(false),
             //We start with fully linked = false,
             //As any new node has not been added to
             //The list
-                                                                                      fullyLinked(fullyLinked),
-                                                                                      lock() {
+                                                                                                        fullyLinked(
+                                                                                                                fullyLinked),
+                                                                                                        lock() {
 
         lock.lock();
         std::cout << "Locked" << std::endl;
@@ -57,23 +59,55 @@ public:
 };
 
 template<typename T, typename V>
-class ConcurrentSkipList : public SkipList<T, V> {
+class ConcurrentSkipList : public OrderedMap<T, V> {
 
 private:
-    std::atomic<std::int32_t> treeSize;
-    std::atomic<std::int32_t> treeLevel;
+
+    std::random_device randomEngine;
+    std::mt19937 generator;
+    std::uniform_int_distribution<unsigned int> distribution;
+
+    std::unique_ptr<SkipNode<T, V>> rootNode;
+
+    std::atomic<SkipNode<T, V> *> lastNode;
+
+    std::atomic_uint32_t treeSize;
+    std::atomic_uint32_t treeLevel;
 
 public:
-    ConcurrentSkipList() : SkipList<T, V>(initializeNodeRoot(SKIP_LIST_HEIGHT_LIMIT)),
+    ConcurrentSkipList() : randomEngine(),
+                           rootNode(initializeNodeRoot(SKIP_LIST_HEIGHT_LIMIT)),
                            treeSize(0),
-                           treeLevel(0){
+                           treeLevel(0),
+                           lastNode(nullptr) {
+        this->generator = std::mt19937(randomEngine());
+    }
 
+    ~ConcurrentSkipList() {
+        this->rootNode.reset();
     }
 
 protected:
+    int generateLevel() {
+        int random = distribution(generator);
 
-    std::unique_ptr<SkipNode<T, V>> initializeNode(std::shared_ptr<T> key, std::shared_ptr<V> value) override {
-        return std::make_unique<ConcurrentSkipNode<T, V>>(std::move(key), std::move(value), this->generateLevel(), false);
+        //Maybe get the amount of consecutive bits that have been set to 1 to get the correct level,
+        //Instead of generating a new number every single time?
+
+        int level = 0;
+
+        while ((random & FIRST_BIT_MASK) != 0 && level < SKIP_LIST_HEIGHT_LIMIT) {
+            level++;
+
+            random = random << 1;
+        }
+
+        return level;
+    }
+
+    std::unique_ptr<SkipNode<T, V>> initializeNode(std::shared_ptr<T> key, std::shared_ptr<V> value) {
+        return std::make_unique<ConcurrentSkipNode<T, V>>(std::move(key), std::move(value), this->generateLevel(),
+                                                          false);
     }
 
     std::unique_ptr<ConcurrentSkipNode<T, V>>
@@ -81,10 +115,20 @@ protected:
         return std::make_unique<ConcurrentSkipNode<T, V>>(std::move(key), std::move(value), level, false);
     }
 
-    std::unique_ptr<SkipNode<T, V>> initializeNodeRoot(int level) override {
+    std::unique_ptr<SkipNode<T, V>> initializeNodeRoot(int level) {
         return std::make_unique<ConcurrentSkipNode<T, V>>(std::shared_ptr<T>(), std::shared_ptr<V>(), level, true);
     }
 
+    /**
+     * Find the largest node that is <= to the key
+     *
+     * When the node found does not == the key, the returned levelFound is = -1
+     *
+     * @param key
+     * @param predecessors
+     * @param successors
+     * @return
+     */
     int concurrentFindNode(const T &key, ConcurrentSkipNode<T, V> **predecessors,
                            ConcurrentSkipNode<T, V> **successors) {
 
@@ -122,18 +166,89 @@ private:
         return node->isFullyLinked() && !node->isMarked() && levelFound == node->getLevel();
     }
 
+    void listTraversalHelper(std::vector<node_info<T, V>> &results) {
+
+        ConcurrentSkipNode<T, V> *root = this->getRoot();
+
+        ConcurrentSkipNode<T, V> *next = root, *previous = root;
+
+        do {
+            next = next->getNextNode(0);
+
+            if (next->isMarked() || !next->isFullyLinked()) {
+                //Node is being removed or node is still being added,
+                //Wait until this operation is finished so we don't get any wrong values
+
+                if (previous->isMarked()) {
+                    //If the previous is being removed and the next is also being removed then they might reference
+                    //The same node or even if they don't, that memory is going to be freed shortly, so we have to restart
+                    //The collection of the nodes.
+                    results.clear();
+                    listTraversalHelper(results);
+
+                    return;
+                }
+
+                next = previous;
+
+                continue;
+            } else {
+                results->push_back(next->getKey());
+            }
+
+            previous = next;
+        } while (next != nullptr);
+    }
+
+    void rangeSearchHelper(const T &base, const T& max, std::vector<node_info<T,V>> &results) {
+        ConcurrentSkipNode<T, V> * predecessors[SKIP_LIST_HEIGHT_LIMIT], successors[SKIP_LIST_HEIGHT_LIMIT];
+
+        int levelFound = concurrentFindNode(base, predecessors, successors);
+
+        ConcurrentSkipNode<T, V> *current = predecessors[0], *previous = current;
+
+        while (current != nullptr && *current->getKeyVal() <= max) {
+
+            if (current->isMarked() || !current->isFullyLinked()) {
+
+                if (previous->isMarked()) {
+                    //When we have the current and previous nodes marked
+                    //Then we have no valid starting point for our search
+                    //So we clear the current results
+                    //And start over.
+                    results.clear();
+
+                    rangeSearchHelper(base, max, results);
+                    return;
+                }
+
+                current = previous;
+
+                continue;
+            }
+
+            previous = current;
+            current = current->getNextNode(0);
+        }
+
+    }
+
 protected:
-    int getListLevel() const override {
+    int getListLevel() const {
         return this->treeLevel.load();
     }
 
-    void setListLevel(int listLevel) override {
+    void setListLevel(int listLevel) {
         this->treeLevel.store(listLevel);
+    }
+
+    ConcurrentSkipNode<T, V> *getRoot() {
+        return (ConcurrentSkipNode<T, V> *) this->rootNode.get();
     }
 
 public:
 
-    int size() override {
+    unsigned int size() override {
         return this->treeSize.load();
     }
 
@@ -145,7 +260,8 @@ public:
 
         ConcurrentSkipNode<T, V> *node = successors[levelFound];
 
-        return levelFound != -1 && node->isFullyLinked() && !node->isMarked();
+        //The node has to be fully linked (Fully inserted) and not in the process of being removed
+        return levelFound != -1 && node->isFullyLinked() && !node->isMarked() && (*node->getKeyVal() == key);
     }
 
     std::optional<std::shared_ptr<V>> get(const T &key) override {
@@ -251,11 +367,27 @@ public:
                 }
             }
 
+            SkipNode<T, V> *last;
+
+            do {
+                last = lastNode.load();
+
+                if (!(predecessor[0] == last || last == nullptr)) {
+                    //If the predecessor to our new node is the previous last node and
+                    //the last node is != null, then we ignore this node, as it cannot be the new
+                    //Last node
+                    break;
+                }
+
+            } while (!this->lastNode.compare_exchange_weak(last, node.get()));
+
             this->treeSize++;
+
+            nodeP->setFullyLinked(true);
 
             while (true) {
                 //Atomically update the height of the list
-                int currentHeight = this->treeLevel.load();
+                unsigned int currentHeight = this->treeLevel.load();
 
                 if (currentHeight < nodeLevel) {
                     if (this->treeLevel.compare_exchange_weak(currentHeight, nodeLevel)) break;
@@ -263,8 +395,6 @@ public:
                     break;
                 }
             }
-
-            nodeP->setFullyLinked(true);
 
             break;
         }
@@ -295,6 +425,7 @@ public:
                     toDeleteLock = std::make_unique<std::lock_guard<std::mutex>>(toDelete->getLock());
 
                     if (toDelete->isMarked()) {
+                        //If the node is already being removed
                         return std::nullopt;
                     }
 
@@ -307,12 +438,15 @@ public:
                 std::vector<std::unique_lock<std::mutex>> locks(SKIP_LIST_HEIGHT_LIMIT);
                 bool valid = true;
 
+                //Acquire the locks to all the predecessors of the node we want to remove.
                 for (int level = 0; valid && level <= toDelete->getLevel(); level++) {
                     predecessor = predecessors[level];
                     successor = successors[level];
 
                     if (predecessor != previousPredecessor) {
-                        locks.emplace_back(predecessor->getLock());
+                        std::unique_lock<std::mutex> lock(predecessor->getLock());
+
+                        locks.push_back(std::move(lock));
 
                         previousPredecessor = predecessor;
                     }
@@ -323,7 +457,7 @@ public:
                 if (!valid) continue;
 
                 std::unique_ptr<SkipNode<T, V>> toDeleteOwnership;
-
+                //Now that we have all of the locks in our control, remove the node from the list
                 for (int level = topLevel; level >= 0; level--) {
 
                     if (level == 0) {
@@ -337,17 +471,158 @@ public:
                     }
                 }
 
+                //Since we have the lock on all of the predecessors of the last node,
+                //We know that no other operation can take place, so this does not need
+                //A big amount of synchronization
+                if (this->lastNode.load() == toDeleteOwnership.get()) {
+                    this->lastNode.store(predecessors[0]);
+                }
+
                 this->treeSize--;
 
-                int tLevel;
+                unsigned int tLevel, newLevel;
 
-                while ((tLevel = this->treeLevel.load()) > 0 && this->getRoot()->getNextNode(tLevel) == nullptr) {
-                    this->treeLevel--;
-                }
+                do {
+                    tLevel = this->treeLevel.load();
+
+                    newLevel = tLevel;
+
+                    while (newLevel > 0 && this->getRoot()->getNextNode(tLevel) == nullptr) {
+                        newLevel--;
+                    }
+
+                } while (!this->treeLevel.compare_exchange_weak(tLevel, newLevel));
 
                 return toDeleteOwnership.get()->getValue();
             } else {
                 return std::nullopt;
+            }
+        }
+    }
+
+    std::optional<node_info<T, V>> peekLargest() override {
+        while (true) {
+
+            ConcurrentSkipNode<T, V> *load = (ConcurrentSkipNode<T, V> *) this->lastNode.load();
+            if (load == nullptr) {
+                return std::nullopt;
+            } else {
+
+                //If the node is being removed or added, retry
+                if (!load->isFullyLinked() || load->isMarked()) continue;
+
+                return std::make_tuple(load->getKey(), load->getValue());
+            }
+        }
+    }
+
+    std::optional<node_info<T, V>> peekSmallest() override {
+
+        ConcurrentSkipNode<T, V> *root = this->getRoot();
+
+        ConcurrentSkipNode<T, V> *next;
+
+        do {
+            next = root->getNextNode(0);
+
+            if (next == nullptr) return std::nullopt;
+
+        } while (next->isMarked() || !next->isFullyLinked());
+
+        return std::make_tuple(next->getKey(), next->getValue());
+    }
+
+    std::unique_ptr<std::vector<std::shared_ptr<T>>> keys() override {
+
+        std::unique_ptr<std::vector<std::shared_ptr<T>>> results =
+                std::make_unique<std::vector<std::shared_ptr<T>>>(this->size());
+
+        std::vector<node_info<T, V>> cache(this->size());
+
+        listTraversalHelper(cache);
+
+        for (node_info<T, V> &start : cache) {
+            results->push_back(std::move(std::get<0>(start)));
+        }
+
+        return std::move(results);
+    }
+
+    std::unique_ptr<std::vector<std::shared_ptr<V>>> values() override {
+
+        std::unique_ptr<std::vector<std::shared_ptr<V>>> results =
+                std::make_unique<std::vector<std::shared_ptr<V>>>(this->size());
+
+        std::vector<node_info<T, V>> cache(this->size());
+
+        listTraversalHelper(cache);
+
+        for (node_info<T, V> &start : cache) {
+            results->push_back(std::move(std::get<1>(start)));
+        }
+
+        return std::move(results);
+    }
+
+    std::unique_ptr<std::vector<node_info<T, V>>> entries() override {
+        std::unique_ptr<std::vector<node_info<T, V>>> results = std::make_unique<std::vector<node_info<T, V>>>(this->size());
+
+        listTraversalHelper(results.get());
+
+        return std::move(results);
+    }
+
+    std::unique_ptr<std::vector<node_info<T, V>>> rangeSearch(const T &base, const T &max) override {
+
+        std::unique_ptr<std::vector<node_info<T, V>>> results = std::make_unique<std::vector<node_info<T, V>>>(this->size());
+
+        rangeSearchHelper(base, max, results.get());
+
+        return std::move(results);
+    }
+
+    std::optional<node_info<T, V>> popSmallest() override {
+
+        ConcurrentSkipNode<T, V> *root = this->getRoot();
+
+        ConcurrentSkipNode<T, V> *next;
+
+        do {
+            next = root->getNextNode(0);
+
+            if (next == nullptr) return std::nullopt;
+
+        } while (next->isMarked() || !next->isFullyLinked());
+
+        auto peekResult = std::make_tuple(next->getKey(), next->getValue());
+
+        auto result = remove(*next->getKeyVal());
+
+        if (result) {
+            return peekResult;
+        }
+
+        return popSmallest();
+    }
+
+    std::optional<node_info<T, V>> popLargest() override {
+        while (true) {
+
+            ConcurrentSkipNode<T, V> *load = (ConcurrentSkipNode<T, V> *) this->lastNode.load();
+            if (load == nullptr) {
+                return std::nullopt;
+            } else {
+
+                //If the node is being removed or added, retry
+                if (!load->isFullyLinked() || load->isMarked()) continue;
+
+                auto peekResult = std::make_tuple(load->getKey(), load->getValue());
+
+                auto result = remove(*load->getKeyVal());
+
+                if (result) {
+                    return peekResult;
+                }
             }
         }
     }

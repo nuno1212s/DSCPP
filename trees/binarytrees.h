@@ -1,7 +1,7 @@
 #ifndef TRABALHO1_BINARYTREES_H
 #define TRABALHO1_BINARYTREES_H
 
-#include "trees.h"
+#include "../datastructures.h"
 #include <tuple>
 #include <memory>
 #include <vector>
@@ -105,14 +105,14 @@ public:
 };
 
 template<typename T, typename V>
-class BinarySearchTree : public TreeMap<T, V> {
+class BinarySearchTree : public OrderedMap<T, V> {
 
 protected:
     std::unique_ptr<TreeNode<T, V>> rootNode;
 
     TreeNode<T, V> *leftMostNode, *rightMostNode;
 
-    int treeSize;
+    unsigned int treeSize;
 
     BinarySearchTree() : treeSize(0), rootNode(nullptr),
                          leftMostNode(nullptr), rightMostNode(nullptr) {}
@@ -595,7 +595,7 @@ protected:
 
 public:
 
-    int size() override {
+    unsigned int size() override {
         return this->treeSize;
     }
 

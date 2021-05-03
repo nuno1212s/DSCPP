@@ -16,7 +16,7 @@ public:
 
     virtual std::shared_ptr<T> remove(const T &key) = 0;
 
-    virtual int size() = 0;
+    virtual unsigned int size() = 0;
 
 };
 
@@ -41,7 +41,43 @@ public:
 
     virtual std::unique_ptr<std::vector<node_info<T, V>>> entries() = 0;
 
-    virtual int size() = 0;
+    virtual unsigned int size() = 0;
+
+};
+
+template<typename T, typename V>
+class OrderedMap : public Map<T, V> {
+
+public:
+    virtual std::unique_ptr<std::vector<node_info<T, V>>> rangeSearch(const T &base, const T &max) = 0;
+
+    virtual std::optional<node_info<T, V>> peekSmallest() = 0;
+
+    virtual std::optional<node_info<T, V>> peekLargest() = 0;
+
+    virtual std::optional<node_info<T, V>> popSmallest() = 0;
+
+    virtual std::optional<node_info<T, V>> popLargest() = 0;
+
+};
+
+template<typename T>
+class Filter {
+public:
+    virtual bool test(const T &key) = 0;
+
+    virtual void add(const T &key) = 0;
+
+    virtual unsigned int size() = 0;
+
+};
+
+//Randomly generated large prime number
+#define SEED 0x7A92F67B
+
+class HashFunction {
+public:
+    virtual unsigned int hashObject(void *, uint32_t size) = 0;
 
 };
 
