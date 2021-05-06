@@ -18,22 +18,16 @@ private:
 
 public:
 
-    ConcurrentSkipNode(std::shared_ptr<T> key, std::shared_ptr<V> value, int level, bool fullyLinked) : SkipNode<T, V>(
-            std::move(key),
-            std::move(value),
-            level),
-                                                                                                        marked(false),
-            //We start with fully linked = false,
-            //As any new node has not been added to
-            //The list
-                                                                                                        fullyLinked(
-                                                                                                                fullyLinked),
-                                                                                                        lock() {
-
-        lock.lock();
-        std::cout << "Locked" << std::endl;
-        lock.unlock();
-        std::cout << "Un Locked" << std::endl;
+    //We start with fully linked = false,
+    //As any new node has not been added to
+    //The list
+    ConcurrentSkipNode(std::shared_ptr<T> key, std::shared_ptr<V> value, int level, bool fullyLinked) :
+            SkipNode<T, V>(
+                    std::move(key),
+                    std::move(value),
+                    level),
+            marked(false),
+            fullyLinked(fullyLinked), lock() {
     }
 
     bool isMarked() const {
@@ -166,14 +160,14 @@ private:
         return node->isFullyLinked() && !node->isMarked() && levelFound == node->getLevel();
     }
 
-    void listTraversalHelper(std::vector<node_info<T, V>> &results) {
+    void listTraversalHelper(std::vector<node_info<T, V>> *results) {
 
         ConcurrentSkipNode<T, V> *root = this->getRoot();
 
         ConcurrentSkipNode<T, V> *next = root, *previous = root;
 
         do {
-            next = next->getNextNode(0);
+            next = (ConcurrentSkipNode<T, V> *) next->getNextNode(0);
 
             if (next->isMarked() || !next->isFullyLinked()) {
                 //Node is being removed or node is still being added,
@@ -183,7 +177,8 @@ private:
                     //If the previous is being removed and the next is also being removed then they might reference
                     //The same node or even if they don't, that memory is going to be freed shortly, so we have to restart
                     //The collection of the nodes.
-                    results.clear();
+                    results->clear();
+
                     listTraversalHelper(results);
 
                     return;
@@ -193,15 +188,15 @@ private:
 
                 continue;
             } else {
-                results->push_back(next->getKey());
+                results->push_back(std::make_tuple(next->getKey(), next->getValue()));
             }
 
             previous = next;
         } while (next != nullptr);
     }
 
-    void rangeSearchHelper(const T &base, const T& max, std::vector<node_info<T,V>> &results) {
-        ConcurrentSkipNode<T, V> * predecessors[SKIP_LIST_HEIGHT_LIMIT], successors[SKIP_LIST_HEIGHT_LIMIT];
+    void rangeSearchHelper(const T &base, const T &max, std::vector<node_info<T, V>> *results) {
+        ConcurrentSkipNode<T, V> *predecessors[SKIP_LIST_HEIGHT_LIMIT], *successors[SKIP_LIST_HEIGHT_LIMIT];
 
         int levelFound = concurrentFindNode(base, predecessors, successors);
 
@@ -216,7 +211,7 @@ private:
                     //Then we have no valid starting point for our search
                     //So we clear the current results
                     //And start over.
-                    results.clear();
+                    results->clear();
 
                     rangeSearchHelper(base, max, results);
                     return;
@@ -228,7 +223,7 @@ private:
             }
 
             previous = current;
-            current = current->getNextNode(0);
+            current = (ConcurrentSkipNode<T, V>*) current->getNextNode(0);
         }
 
     }
@@ -367,12 +362,12 @@ public:
                 }
             }
 
-            SkipNode<T, V> *last;
+            SkipNode<T, V> *last = nullptr;
 
             do {
                 last = lastNode.load();
 
-                if (!(predecessor[0] == last || last == nullptr)) {
+                if (!(predecessors[0] == last || last == nullptr)) {
                     //If the predecessor to our new node is the previous last node and
                     //the last node is != null, then we ignore this node, as it cannot be the new
                     //Last node
@@ -523,7 +518,7 @@ public:
         ConcurrentSkipNode<T, V> *next;
 
         do {
-            next = root->getNextNode(0);
+            next = (ConcurrentSkipNode<T, V> *) root->getNextNode(0);
 
             if (next == nullptr) return std::nullopt;
 
@@ -539,7 +534,7 @@ public:
 
         std::vector<node_info<T, V>> cache(this->size());
 
-        listTraversalHelper(cache);
+        listTraversalHelper(&cache);
 
         for (node_info<T, V> &start : cache) {
             results->push_back(std::move(std::get<0>(start)));
@@ -555,7 +550,7 @@ public:
 
         std::vector<node_info<T, V>> cache(this->size());
 
-        listTraversalHelper(cache);
+        listTraversalHelper(&cache);
 
         for (node_info<T, V> &start : cache) {
             results->push_back(std::move(std::get<1>(start)));
@@ -565,7 +560,8 @@ public:
     }
 
     std::unique_ptr<std::vector<node_info<T, V>>> entries() override {
-        std::unique_ptr<std::vector<node_info<T, V>>> results = std::make_unique<std::vector<node_info<T, V>>>(this->size());
+        std::unique_ptr<std::vector<node_info<T, V>>> results = std::make_unique<std::vector<node_info<T, V>>>(
+                this->size());
 
         listTraversalHelper(results.get());
 
@@ -574,7 +570,8 @@ public:
 
     std::unique_ptr<std::vector<node_info<T, V>>> rangeSearch(const T &base, const T &max) override {
 
-        std::unique_ptr<std::vector<node_info<T, V>>> results = std::make_unique<std::vector<node_info<T, V>>>(this->size());
+        std::unique_ptr<std::vector<node_info<T, V>>> results = std::make_unique<std::vector<node_info<T, V>>>(
+                this->size());
 
         rangeSearchHelper(base, max, results.get());
 
@@ -588,7 +585,7 @@ public:
         ConcurrentSkipNode<T, V> *next;
 
         do {
-            next = root->getNextNode(0);
+            next = (ConcurrentSkipNode<T, V>*) root->getNextNode(0);
 
             if (next == nullptr) return std::nullopt;
 

@@ -16,6 +16,10 @@ public:
                              parent),
               height(0) {}
 
+    ~AVLNode() override {
+
+    }
+
     int getHeight() {
         return height;
     }
@@ -44,11 +48,11 @@ private:
 
     std::unique_ptr<TreeNode<T, V>> rotateLeft(std::unique_ptr<TreeNode<T, V>> root) override {
 
-        auto *rootRef = (AVLNode<T, V>*) root.get();
+        auto *rootRef = (AVLNode<T, V> *) root.get();
 
         auto newRoot = BinarySearchTree<T, V>::rotateLeft(std::move(root));
 
-        auto* rightRef = (AVLNode<T, V>*) newRoot.get();
+        auto *rightRef = (AVLNode<T, V> *) newRoot.get();
 
         rootRef->setHeight(1 + std::max(getHeight(rootRef->getLeftChild()), getHeight(rootRef->getRightChild())));
         rightRef->setHeight(1 + std::max(getHeight(rightRef->getLeftChild()), getHeight(rightRef->getRightChild())));
@@ -173,15 +177,19 @@ private:
 public:
     AvlTree() : BinarySearchTree<T, V>() {}
 
+    ~AvlTree() override {
+        std::cout << "Deleted AVL Tree" << std::endl;
+    }
+
     int getTreeHeight() {
-        return ((AVLNode<T, V>*) this->getRoot())->getHeight();
+        return ((AVLNode<T, V> *) this->getRoot())->getHeight();
     }
 
     std::unique_ptr<TreeNode<T, V>> initializeNode(std::shared_ptr<T> key, std::shared_ptr<V> value,
                                                    TreeNode<T, V> *parent) override {
 
         auto node = std::make_unique<AVLNode<T, V>>(std::move(key), std::move(value),
-                (AVLNode<T, V> *) parent);
+                                                    (AVLNode<T, V> *) parent);
 
         return std::move(node);
     }

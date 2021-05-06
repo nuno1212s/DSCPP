@@ -4,12 +4,12 @@
 #include "../trees/redblacktree.h"
 #include "../trees/splaytree.h"
 #include "../trees/treaps.h"
+#include "../probabilisticlist/skiplist.h"
 #include "gtest/gtest.h"
-#include "mutex"
 #include <chrono>
 
 //#define TEST_SIZE 1048576
-#define TEST_SIZE 8
+#define TEST_SIZE 50000
 
 void insert(Map<int, int> *map) {
 
@@ -42,12 +42,13 @@ void insertAndContains(Map<int, int> *map) {
     std::shared_ptr<int> value = std::make_shared<int>(42);
 
     auto start = std::chrono::high_resolution_clock::now();
+
     for (int i = 0; i < TEST_SIZE; i++) {
         std::shared_ptr<int> key = std::make_shared<int>(i);
 
-        std::cout << "inserting " << i << std::endl;
         map->add(std::move(key), value);
     }
+
     auto endAdd = std::chrono::high_resolution_clock::now();
 
     auto startContains = endAdd;
@@ -56,14 +57,17 @@ void insertAndContains(Map<int, int> *map) {
 
     auto endContains = std::chrono::high_resolution_clock::now();
 
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endContains - startContains);
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endContains - startContains);
 
-    auto durationAdd = std::chrono::duration_cast<std::chrono::microseconds>(endAdd - start);
-    std::cout << "Time taken for adds: " << durationAdd.count() << "/" << TEST_SIZE << " micros per operation. Has: "
-              << duration.count() << "/" << TEST_SIZE << " micros per operation." << std::endl;
+    auto durationAdd = std::chrono::duration_cast<std::chrono::milliseconds>(endAdd - start);
+
+    std::cout << "Time taken for adds: " << durationAdd.count() << "/" << TEST_SIZE << " millis per operation. Has: "
+              << duration.count() << "/" << TEST_SIZE << " millis per operation." << std::endl;
 }
 
 void insertAndRemove(Map<int, int> *map) {
+
+    auto start = std::chrono::high_resolution_clock::now();
 
     insert(map);
 
@@ -148,12 +152,45 @@ void insertAndPopBackwards(OrderedMap<int, int> *map) {
     ASSERT_EQ(map->size(), 0);
 }
 
+TEST(MemTest, Delete) {
+
+    std::unique_ptr<OrderedMap<int, int>> map = std::make_unique<AvlTree<int, int>>();
+
+    insertAndContains(map.get());
+
+}
+
 TEST(TreeTest, InsertAndContains) {
 
     std::unique_ptr<OrderedMap<int, int>> map = std::make_unique<AvlTree<int, int>>();
 
     insertAndContains(map.get());
 
+    map.reset();
+
+    map = std::make_unique<RedBlackTree<int, int>>();
+
+    insertAndContains(map.get());
+
+    map.reset();
+
+    map = std::make_unique<SplayTree<int, int>>();
+
+    insertAndContains(map.get());
+
+    map.reset();
+
+    map = std::make_unique<Treap<int, int>>();
+
+    insertAndContains(map.get());
+
+    map.reset();
+
+    map = std::make_unique<SkipList<int, int>>();
+
+    std::cout << "testing skip list" << std::endl;
+
+    insertAndContains(map.get());
 }
 
 TEST(TreeTest, InsertAndRemove) {
@@ -171,6 +208,12 @@ TEST(TreeTest, InsertAndRemove) {
     map.reset();
 
     map = std::make_unique<SplayTree<int, int>>();
+
+    insertAndRemove(map.get());
+
+    map.reset();
+
+    map = std::make_unique<SkipList<int, int>>();
 
     insertAndRemove(map.get());
 }
@@ -198,6 +241,12 @@ TEST(TreeTest, InsertAndRemoveBackwards) {
     map = std::make_unique<Treap<int, int>>();
 
     insertAndRemoveBackwards(map.get());
+
+    map.reset();
+
+    map = std::make_unique<SkipList<int, int>>();
+
+    insertAndRemoveBackwards(map.get());
 }
 
 TEST(TreeTest, InsertAndPopInOrder) {
@@ -217,6 +266,10 @@ TEST(TreeTest, InsertAndPopInOrder) {
     std::cout << "testing splay tree." << std::endl;
 
     map = std::make_unique<SplayTree<int, int>>();
+
+    insertAndPop(map.get());
+
+    map = std::make_unique<SkipList<int, int>>();
 
     insertAndPop(map.get());
 }
@@ -240,6 +293,12 @@ TEST(TreeTest, InsertAndPopBackwards) {
     std::cout << "testing splay tree." << std::endl;
 
     map = std::make_unique<SplayTree<int, int>>();
+
+    insertAndPopBackwards(map.get());
+
+    map.reset();
+
+    map = std::make_unique<SkipList<int, int>>();
 
     insertAndPopBackwards(map.get());
 }

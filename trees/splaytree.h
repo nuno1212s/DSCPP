@@ -4,9 +4,23 @@
 #include "binarytrees.h"
 
 template<typename T, typename V>
+class SplayNode : public TreeNode<T, V> {
+
+public:
+    SplayNode(std::shared_ptr<T> key, std::shared_ptr<V> value, SplayNode<T, V> *parent)
+            : TreeNode<T, V>(std::move(key),
+                             std::move(value),
+                             parent) {}
+
+    ~SplayNode() override {
+
+    }
+};
+
+template<typename T, typename V>
 class SplayTree : public BinarySearchTree<T, V> {
 
-private:
+protected:
 
     void rotateRightP(TreeNode<T, V> *root) {
 
@@ -51,16 +65,12 @@ private:
     }
 
     void zigZig(TreeNode<T, V> *root) {
-        rotateRightP(root->getParent());
-        //We are now at the position of our parent, so rotate around ourselves again to go to the position of our
-        //Grand parent
+        rotateRightP(root->getParent()->getParent());
         rotateRightP(root->getParent());
     }
 
     void zagZag(TreeNode<T, V> *root) {
-        rotateLeftP(root->getParent());
-        //We are now at the position of our parent, so rotate around ourselves again to go to the position of our
-        //Grand parent
+        rotateLeftP(root->getParent()->getParent());
         rotateLeftP(root->getParent());
     }
 
@@ -107,8 +117,10 @@ private:
             } else {
                 //We are only one step away from becoming the root
                 if (parent->getLeftChild() == x) {
+                    //Zig rotation
                     rotateRightP(x->getParent());
                 } else {
+                    //Zag rotation
                     rotateLeftP(x->getParent());
                 }
 
@@ -147,15 +159,26 @@ private:
         }
     }
 
-public:
-
 protected:
     std::unique_ptr<TreeNode<T, V>>
     initializeNode(std::shared_ptr<T> key, std::shared_ptr<V> value, TreeNode<T, V> *parent) override {
-        return std::make_unique<TreeNode<T, V>>(std::move(key), std::move(value), parent);
+        auto node = std::make_unique<SplayNode<T, V>>(std::move(key), std::move(value),
+                                                    (SplayNode<T, V> *) parent);
+
+        return std::move(node);
     }
 
 public:
+
+    SplayTree() : BinarySearchTree<T, V>() {}
+
+    ~SplayTree() override {
+
+        auto nodes = std::make_unique<std::vector<std::unique_ptr<SplayNode<T, V>>>>(this->size());
+
+
+
+    }
 
     void add(std::shared_ptr<T> key, std::shared_ptr<V> value) override {
 
@@ -301,7 +324,7 @@ public:
                 largestNodeInRoot1->setRightChild(std::move(rightNodeOwner));
             }
 
-            this->treeSize --;
+            this->treeSize--;
 
             return std::make_tuple(rootOwner->getKey(), rootOwner->getValue());
         }
@@ -341,7 +364,7 @@ public:
                 largestNodeInRoot1->setRightChild(std::move(rightNodeOwner));
             }
 
-            this->treeSize --;
+            this->treeSize--;
 
             return std::make_tuple(rootOwner->getKey(), rootOwner->getValue());
         }

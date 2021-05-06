@@ -3,28 +3,18 @@
 #include <iostream>
 #include <memory>
 
-enum TestAction {
+void hello() {
 
-    INSERT,
-    REMOVE,
-    CONTAINS,
-    POP_SMALLEST,
-    POP_LARGEST
+    std::unique_ptr<OrderedMap<int, int>> map = std::make_unique<AvlTree<int, int>>();
 
-};
-
-TestAction readFromString(std::string &string) {
-
-    if (string == "I") {
-        return TestAction::INSERT;
-    } else if (string == "R") {
-        return TestAction::REMOVE;
-    } else if (string == "C") {
-        return TestAction::CONTAINS;
-    } else if (string == "PS") {
-        return TestAction::POP_SMALLEST;
-    } else if (string == "PL") {
-        return TestAction::POP_LARGEST;
-    }
-
+    map->add(std::make_shared<int>(1), std::make_shared<int>(2));
 }
+
+/*int main(int argc, char **argv) {
+
+    hello();
+
+    std::unique_ptr<OrderedMap<int, int>> map = std::make_unique<AvlTree<int, int>>();
+
+    map->add(std::make_shared<int>(1), std::make_shared<int>(2));
+}*/

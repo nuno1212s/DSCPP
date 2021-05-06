@@ -49,6 +49,8 @@ template<typename T, typename V>
 class OrderedMap : public Map<T, V> {
 
 public:
+    virtual ~OrderedMap() {};
+
     virtual std::unique_ptr<std::vector<node_info<T, V>>> rangeSearch(const T &base, const T &max) = 0;
 
     virtual std::optional<node_info<T, V>> peekSmallest() = 0;

@@ -348,7 +348,3 @@ void SpookyHash::Final(uint64 *hash1, uint64 *hash2)
     *hash1 = h0;
     *hash2 = h1;
 }
-
-unsigned int SpookyHashImpl::hashObject(void *pVoid, uint32_t size) {
-    return 0;
-}

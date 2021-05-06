@@ -20,7 +20,6 @@ protected:
 
     std::unique_ptr<TreeNode<T, V>> leftNode, rightNode;
 
-
 public:
     TreeNode(std::shared_ptr<T> key, std::shared_ptr<V> value, TreeNode<T, V> *parent) : key(std::move(key)),
                                                                                          value(std::move(value)),
@@ -28,11 +27,8 @@ public:
                                                                                          leftNode(nullptr),
                                                                                          rightNode(nullptr) {}
 
-    ~TreeNode() {
+    virtual ~TreeNode() {
 
-        std::cout << "Deleted node with key " << *getKeyVal() << std::endl;
-
-        //Delete our references to these nodes
         this->key.reset();
         this->value.reset();
 
@@ -117,7 +113,7 @@ protected:
     BinarySearchTree() : treeSize(0), rootNode(nullptr),
                          leftMostNode(nullptr), rightMostNode(nullptr) {}
 
-    ~BinarySearchTree() {
+    ~BinarySearchTree() override {
         this->rootNode.reset();
     }
 
@@ -537,7 +533,7 @@ protected:
 
         TreeNode<T, V> *rootRef = root.get(), *rightRef = right.get();
 
-        std::cout << "Rotating left around root: " << *(root->getKeyVal()) << std::endl;
+        //std::cout << "Rotating left around root: " << *(root->getKeyVal()) << std::endl;
 
         if (rightRef->getLeftChild() != nullptr) {
             //Move the left child of the root's right child into the right child of the root
@@ -557,7 +553,7 @@ protected:
 
         TreeNode<T, V> *rootRef = root.get(), *leftRef = left.get();
 
-        std::cout << "Rotating right around root: " << *(root->getKeyVal()) << std::endl;
+        //std::cout << "Rotating right around root: " << *(root->getKeyVal()) << std::endl;
 
         if (leftRef->getRightChild() != nullptr) {
             rootRef->setLeftChild(std::move(leftRef->getRightNodeOwnership()));

@@ -1,6 +1,7 @@
 #ifndef TRABALHO1_SKIPLIST_H
 #define TRABALHO1_SKIPLIST_H
 
+#include <chrono>
 #include <memory>
 #include <random>
 #include <vector>
@@ -8,8 +9,8 @@
 
 //Since most cache lines are around 64 bytes long, we can keep an array of 8 64 bit pointers
 //To improve cache performance
-#define SKIP_LIST_HEIGHT_LIMIT 8
-#define FIRST_BIT_MASK 0x80000000
+#define SKIP_LIST_HEIGHT_LIMIT 28
+#define FIRST_BIT_MASK 0x1
 
 template<typename T, typename V>
 class SkipNode {
@@ -90,6 +91,8 @@ private:
 
     unsigned int listSize;
 
+    unsigned long timeTakenFound, timeTakenInsert;
+
 protected:
     virtual int getListLevel() const {
         return this->listLevel;
@@ -100,7 +103,7 @@ protected:
     }
 
     int generateLevel() {
-        int random = distribution(generator);
+        unsigned int random = distribution(generator);
 
         //Maybe get the amount of consecutive bits that have been set to 1 to get the correct level,
         //Instead of generating a new number every single time?
@@ -110,10 +113,10 @@ protected:
         while ((random & FIRST_BIT_MASK) != 0 && level < SKIP_LIST_HEIGHT_LIMIT) {
             level++;
 
-            random = random << 1;
+            random = random >> 1;
         }
 
-        std::cout << "Generated level: " << level << std::endl;
+        // std::cout << "Generated level: " << level << std::endl;
 
         return level;
     }
@@ -146,6 +149,7 @@ protected:
                    *next->getKeyVal() < key) {
                 //Find the largest key in the current level that is smaller than the key we're looking for
                 current = next;
+                next = next->getNextNode(currentLevel);
             }
 
             if (toUpdate != nullptr) {
@@ -156,7 +160,7 @@ protected:
         }
 
         //Since we find the largest node that's smaller than key, if the node that follows it is not the node we are looking
-        //For then that node does not exist in the list
+        //For, then that node does not exist in the list
         return current->getNextNode(0);
     }
 
@@ -178,7 +182,9 @@ public:
                  rootNode(initializeNodeRoot(SKIP_LIST_HEIGHT_LIMIT)),
                  listSize(0),
                  listLevel(0),
-                 lastNode(nullptr) {
+                 lastNode(nullptr),
+                 timeTakenFound(0),
+                 timeTakenInsert(0) {
         this->generator = std::mt19937(randomEngine());
     }
 
@@ -190,7 +196,7 @@ public:
         this->generator = std::mt19937(randomEngine());
     }
 
-    ~SkipList() {
+    ~SkipList() override {
         this->rootNode.reset();
     }
 
@@ -245,7 +251,7 @@ public:
 
     virtual bool hasKey(const T &key) override {
 
-        SkipNode<T, V>* node = findNode(key, nullptr);
+        SkipNode<T, V> *node = findNode(key, nullptr);
 
         return node != nullptr && (*node->getKeyVal()) == key;
     }
@@ -299,6 +305,8 @@ public:
             while (getListLevel() > 0 && getRoot()->getNextNode(getListLevel()) == nullptr) {
                 setListLevel(getListLevel() - 1);
             }
+
+            return nodeOwnership.get()->getValue();
         }
     }
 

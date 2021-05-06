@@ -16,6 +16,8 @@ public:
             TreeNode<T, V>(std::move(key), std::move(value), parent),
             heapWeight(heapWeight) {}
 
+    ~TreapNode() override {}
+
     int getHeapWeight() const {
         return heapWeight;
     }
@@ -39,7 +41,7 @@ protected:
     initializeNode(std::shared_ptr<T> key, std::shared_ptr<V> value, TreeNode<T, V> *parent) override {
         auto node = std::make_unique<TreapNode<T, V>>(key, value, (TreapNode<T, V> *) parent, distribution(generator));
 
-        std::cout << "New node with weight "  << node->getHeapWeight() << std::endl;
+        //std::cout << "New node with weight "  << node->getHeapWeight() << std::endl;
 
         return std::move(node);
     }
@@ -78,6 +80,7 @@ protected:
 
             if (parent->getLeftChild() == root) {
                 std::unique_ptr<TreeNode<T, V>> leftOwner = parent->getLeftNodeOwnership();
+
                 parent->setLeftChild(this->rotateLeft(std::move(leftOwner)));
             } else {
                 std::unique_ptr<TreeNode<T, V>> rightOwner = parent->getRightNodeOwnership();
