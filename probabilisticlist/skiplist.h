@@ -93,6 +93,35 @@ private:
 
     unsigned long timeTakenFound, timeTakenInsert;
 
+public:
+    SkipList() : randomEngine(),
+                 rootNode(initializeNodeRoot(SKIP_LIST_HEIGHT_LIMIT)),
+                 listSize(0),
+                 listLevel(0),
+                 lastNode(nullptr),
+                 timeTakenFound(0),
+                 timeTakenInsert(0) {
+        this->generator = std::mt19937(randomEngine());
+    }
+
+    SkipList(std::unique_ptr<SkipNode<T, V>> root) : randomEngine(),
+                                                     rootNode(std::move(root)),
+                                                     listSize(0),
+                                                     listLevel(0),
+                                                     lastNode(nullptr) {
+        this->generator = std::mt19937(randomEngine());
+    }
+
+    ~SkipList() override {
+
+        std::unique_ptr<SkipNode<T,V>> current = std::move(this->rootNode);
+
+        while (current.get()->getNextNode(0) != nullptr) {
+            current = current.get()->getNextOwnership();
+        }
+
+    }
+
 protected:
     virtual int getListLevel() const {
         return this->listLevel;
@@ -178,28 +207,6 @@ protected:
     }
 
 public:
-    SkipList() : randomEngine(),
-                 rootNode(initializeNodeRoot(SKIP_LIST_HEIGHT_LIMIT)),
-                 listSize(0),
-                 listLevel(0),
-                 lastNode(nullptr),
-                 timeTakenFound(0),
-                 timeTakenInsert(0) {
-        this->generator = std::mt19937(randomEngine());
-    }
-
-    SkipList(std::unique_ptr<SkipNode<T, V>> root) : randomEngine(),
-                                                     rootNode(std::move(root)),
-                                                     listSize(0),
-                                                     listLevel(0),
-                                                     lastNode(nullptr) {
-        this->generator = std::mt19937(randomEngine());
-    }
-
-    ~SkipList() override {
-        this->rootNode.reset();
-    }
-
     virtual void add(std::shared_ptr<T> key, std::shared_ptr<V> value) override {
 
         SkipNode<T, V> *update[SKIP_LIST_HEIGHT_LIMIT] = {nullptr};

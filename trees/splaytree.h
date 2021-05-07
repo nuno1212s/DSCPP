@@ -2,6 +2,7 @@
 #define TRABALHO1_SPLAYTREE_H
 
 #include "binarytrees.h"
+#include <stack>
 
 template<typename T, typename V>
 class SplayNode : public TreeNode<T, V> {
@@ -173,11 +174,6 @@ public:
     SplayTree() : BinarySearchTree<T, V>() {}
 
     ~SplayTree() override {
-
-        auto nodes = std::make_unique<std::vector<std::unique_ptr<SplayNode<T, V>>>>(this->size());
-
-
-
     }
 
     void add(std::shared_ptr<T> key, std::shared_ptr<V> value) override {

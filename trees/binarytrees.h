@@ -114,7 +114,27 @@ protected:
                          leftMostNode(nullptr), rightMostNode(nullptr) {}
 
     ~BinarySearchTree() override {
-        this->rootNode.reset();
+
+        //Perform a DFS to avoid going over the stack recursion limit when deleting the tree
+        auto stack = std::make_unique<std::stack<std::unique_ptr<TreeNode<T, V>>>>();
+
+        std::stack<std::unique_ptr<TreeNode<T, V>>> *stackP = stack.get();
+
+        stackP->push(std::move(this->getRootNodeOwnership()));
+
+        while (!stackP->empty()) {
+            std::unique_ptr<TreeNode<T, V>> &topRef = stackP->top();
+
+            if (topRef.get()->getLeftChild() != nullptr) {
+                stackP->push(std::move(topRef.get()->getLeftNodeOwnership()));
+            }
+
+            if (topRef.get()->getRightChild() != nullptr) {
+                stackP->push(std::move(topRef.get()->getRightNodeOwnership()));
+            }
+
+            stackP->pop();
+        }
     }
 
     std::unique_ptr<TreeNode<T, V>> getRootNodeOwnership() {
