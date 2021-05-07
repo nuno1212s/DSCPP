@@ -117,9 +117,9 @@ public:
         std::unique_ptr<SkipNode<T,V>> current = std::move(this->rootNode);
 
         while (current.get()->getNextNode(0) != nullptr) {
+            //By reassigning the unique_ptr, the previous one gets deleted
             current = current.get()->getNextOwnership();
         }
-
     }
 
 protected:

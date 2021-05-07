@@ -123,17 +123,25 @@ protected:
         stackP->push(std::move(this->getRootNodeOwnership()));
 
         while (!stackP->empty()) {
+
+            std::unique_ptr<TreeNode<T, V>> left, right;
+
             std::unique_ptr<TreeNode<T, V>> &topRef = stackP->top();
 
             if (topRef.get()->getLeftChild() != nullptr) {
-                stackP->push(std::move(topRef.get()->getLeftNodeOwnership()));
+                left = std::move(topRef.get()->getLeftNodeOwnership());
             }
 
             if (topRef.get()->getRightChild() != nullptr) {
-                stackP->push(std::move(topRef.get()->getRightNodeOwnership()));
+                right = std::move(topRef.get()->getRightNodeOwnership());
             }
 
             stackP->pop();
+
+            if (left.get() != nullptr)
+                stackP->push(std::move(left));
+            if (right.get() != nullptr)
+                stackP->push(std::move(right));
         }
     }
 

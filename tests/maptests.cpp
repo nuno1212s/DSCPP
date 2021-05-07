@@ -9,7 +9,7 @@
 #include <chrono>
 
 //#define TEST_SIZE 1048576
-#define TEST_SIZE 50000
+#define TEST_SIZE 100000
 
 void insert(Map<int, int> *map) {
 

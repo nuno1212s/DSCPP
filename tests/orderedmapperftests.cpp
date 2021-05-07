@@ -119,10 +119,6 @@ TEST(PerfTest, SEQUENTIAL_ASC_INSERT_HEAVY) {
 
         insertHeavyAscTest(currentTestSize, ptrs.get());
 
-        auto entries = ptrs->entries();
-
-        auto size = entries->size();
-
         ptrs.reset();
 
         ptrs = std::make_unique<Treap<int, int>>();
@@ -133,17 +129,13 @@ TEST(PerfTest, SEQUENTIAL_ASC_INSERT_HEAVY) {
 
         ptrs.reset();
 
-        /*ptrs = std::make_unique<SkipList<int, int>>();
+        ptrs = std::make_unique<SkipList<int, int>>();
 
         std::cout << "Testing the DS: Skip List" << std::endl;
 
         insertHeavyAscTest(currentTestSize, ptrs.get());
 
-        auto entries = ptrs->entries();
-
-        auto size = entries->size();
-
-        ptrs.reset();*/
+        ptrs.reset();
 
         currentTestSize *= TEST_MULTIPLY;
     }
