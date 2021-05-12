@@ -161,6 +161,14 @@ private:
             auto leftHeight = getHeight((AVLNode<T, V> *) leaf->getLeftChild());
             auto rightHeight = getHeight((AVLNode<T, V> *) leaf->getRightChild());
 
+            int prevHeight = leaf->getHeight();
+
+            if (prevHeight == 1 + std::max(leftHeight, rightHeight)) {
+                //If the height of the node has not changed, then we don't have to recurse all the way up the tree
+                //As the height of the parents will also not change
+                break;
+            }
+
             leaf->setHeight(1 + std::max(leftHeight, rightHeight));
 
             int bal = leftHeight - rightHeight;
@@ -177,9 +185,7 @@ private:
 public:
     AvlTree() : BinarySearchTree<T, V>() {}
 
-    ~AvlTree() override {
-        std::cout << "Deleted AVL Tree" << std::endl;
-    }
+    ~AvlTree() override {}
 
     int getTreeHeight() {
         return ((AVLNode<T, V> *) this->getRoot())->getHeight();
@@ -211,7 +217,6 @@ public:
 
             return std::get<1>(std::get<0>(*removedNodeInfo));
         } else {
-            std::cout << "not present" << std::endl;
             return std::nullopt;
         }
     }

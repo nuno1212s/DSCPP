@@ -152,9 +152,26 @@ private:
 
     void deleteNode(TreapNode<T, V> *rootNode) {
 
-        if (rootNode->getLeftChild() == nullptr && rootNode->getRightChild() == nullptr) {
+        if (rootNode->getLeftChild() != nullptr && rootNode->getRightChild() != nullptr) {
+            //SkipNode has 2 children
+            bottomfy(rootNode);
+
+            deleteNode(rootNode);
+        } else if (rootNode->getLeftChild() == nullptr && rootNode->getRightChild() == nullptr) {
             //Leaf node, so we just have to delete it
             auto *parent = rootNode->getParent();
+
+            if (rootNode->getLeftChild() == nullptr) {
+
+                if (rootNode == this->leftMostNode) {
+                    this->handleRemoveSmallestNode();
+                }
+
+            } else if (rootNode->getRightChild() == nullptr) {
+                if (rootNode == this->rightMostNode) {
+                    this->handleRemoveLargestNode();
+                }
+            }
 
             if (parent == nullptr) {
                 auto rootOwnership = this->getRootNodeOwnership();
@@ -168,7 +185,7 @@ private:
 
             this->treeSize--;
 
-        } else if (rootNode->getLeftChild() != nullptr || rootNode->getRightChild() != nullptr) {
+        } else {
             //SkipNode only has one child, remove it and set the child in it's place
 
             std::unique_ptr<TreeNode<T, V>> child, node;
@@ -180,6 +197,19 @@ private:
             }
 
             auto parent = rootNode->getParent();
+
+            if (rootNode->getLeftChild() == nullptr) {
+
+                if (rootNode == this->leftMostNode) {
+                    this->handleRemoveSmallestNode();
+                }
+
+            } else if (rootNode->getRightChild() == nullptr) {
+
+                if (rootNode == this->rightMostNode) {
+                    this->handleRemoveLargestNode();
+                }
+            }
 
             if (parent == nullptr) {
                 this->setRootNode(std::move(child));
@@ -196,11 +226,6 @@ private:
 
             this->treeSize--;
 
-        } else {
-            //SkipNode has 2 children
-            bottomfy(rootNode);
-
-            deleteNode(rootNode);
         }
     }
 

@@ -217,8 +217,6 @@ protected:
 
             std::unique_ptr<TreeNode<T, V>> newRoot = initializeNode(key, value, nullptr);
 
-            std::cout << "new root node " << std::endl;
-
             this->setRootNode(std::move(newRoot));
 
             this->setLeftMostNode(this->getRoot());
@@ -334,19 +332,14 @@ protected:
 
                 if (root->getRightChild() == nullptr) {
                     //If we are the right most node in this subtree, check if we are global
-                    auto largest = this->peekLargest();
-                    if (largest) {
-                        if (key == *std::get<0>(*largest)) {
-                            this->handleRemoveLargestNode();
-                        }
+                    if (root == this->rightMostNode) {
+                        this->handleRemoveLargestNode();
                     }
                 }
 
                 if (root->getLeftChild() == nullptr) {
                     //If we are the left most node in this subtree, check if we are global
-                    auto smallest = this->peekSmallest();
-
-                    if (key == *std::get<0>(*smallest)) {
+                    if (root == this->leftMostNode) {
                         this->handleRemoveSmallestNode();
                     }
                 }
