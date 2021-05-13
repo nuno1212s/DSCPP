@@ -118,6 +118,8 @@ protected:
         //Perform a DFS to avoid going over the stack recursion limit when deleting the tree
         auto stack = std::make_unique<std::stack<std::unique_ptr<TreeNode<T, V>>>>();
 
+        if (this->size() == 0) return;
+
         std::stack<std::unique_ptr<TreeNode<T, V>>> *stackP = stack.get();
 
         stackP->push(std::move(this->getRootNodeOwnership()));

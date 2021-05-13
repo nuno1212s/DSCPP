@@ -29,11 +29,11 @@ add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
         EXCLUDE_FROM_ALL)
 
 # Now simply link against gtest or gtest_main as needed. Eg
-add_executable(Trabalho1 main.cpp trees/binarytrees.h trees/avltree.h datastructures.h tests/maptests.cpp
+add_executable(Trabalho1 trees/binarytrees.h trees/avltree.h datastructures.h tests/maptests.cpp
         trees/redblacktree.h trees/splaytree.h tests/avltests.cpp tests/rebblacktests.cpp trees/treaps.h
         tests/treaptests.cpp probabilisticlist/skiplist.h probabilisticlist/concurrentskiplist.h tests/skiplisttests.cpp
         filters/bloomfilter.h filters/hashes/MurmurHash3.cpp filters/hashes/MurmurHash3.h filters/hashes/SpookyV2.cpp
-        filters/concurrentbloomfilter.h tests/performancetests.cpp tests/performancetests.h tests/orderedmapperftests.cpp tests/bloomfiltertests.cpp)
+        filters/concurrentbloomfilter.h tests/orderedmapperftests.cpp tests/bloomfiltertests.cpp)
 
 target_link_libraries(Trabalho1 gtest_main)
 add_test(NAME example_test COMMAND Trabalho1)
