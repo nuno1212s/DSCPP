@@ -3,9 +3,15 @@
 
 #include "../datastructures.h"
 #include "hashes/MurmurHash3.h"
+#include "hashes/SpookyV2.h"
+#include <math.h>
 
 #define DEFAULT_HASH_FUNCTIONS 3
 #define DEFAULT_BLOOM_FILTER_SIZE 512000 //512KB default size
+
+unsigned int getRecommendedSizeFor(int hashFunctions, int itemCount, float failRate) {
+    return (unsigned int) ((hashFunctions * itemCount) / log10(2));
+}
 
 template<typename T>
 class BloomFilter : public Filter<T> {
@@ -27,6 +33,18 @@ private:
     std::unique_ptr<std::vector<uint8_t>> data;
 
 private:
+    unsigned int getHashFunction(int hashFunc, const void *key, uint32_t size) {
+
+        static MurmurHash murmurHash;
+
+        static SpookyHashImpl spookyHash;
+
+        if (hashFunc % 2 == 0) {
+            return murmurHash.hashObject(key, size, hashFunc);
+        } else {
+            return spookyHash.hashObject(key, size, hashFunc);
+        }
+    }
 
     unsigned int calculatePositionFromHash(unsigned int hash) {
 
@@ -65,13 +83,15 @@ public:
         data = std::make_unique<std::vector<uint8_t>>(this->byteSize);
     };
 
+    ~BloomFilter() {
+        data.reset();
+    }
+
     bool test(const T &key) override {
 
         for (int i = 0; i < DEFAULT_HASH_FUNCTIONS; i++) {
 
-            MurmurHash hashFunc;
-
-            unsigned int hash = hashFunc.hashObject(key, sizeof(T));
+            unsigned int hash = getHashFunction(i, &key, sizeof(T));
 
             hash = calculatePositionFromHash(hash);
 
@@ -80,7 +100,7 @@ public:
             //For the result to be yes, then all bit results from all the hash functions
             //Have to be set to one.
             //If any of them is set to 0, then the key is definitely not in the filter
-            if (!getBitValue(this->data[bytePosition], hash % UINT8_WIDTH)) {
+            if (!getBitValue((*this->data)[bytePosition], hash % UINT8_WIDTH)) {
                 return false;
             }
         }
@@ -92,15 +112,13 @@ public:
 
         for (int i = 0; i < DEFAULT_HASH_FUNCTIONS; i++) {
 
-            MurmurHash hashFunc;
-
-            unsigned int hash = hashFunc.hashObject(key, sizeof(T));
+            unsigned int hash = getHashFunction(i, &key, sizeof(T));
 
             hash = calculatePositionFromHash(hash);
 
             unsigned int bytePosition = hash / UINT8_WIDTH;
 
-            setBitToOne(this->data[bytePosition], hash % UINT8_WIDTH);
+            setBitToOne((*this->data)[bytePosition], hash % UINT8_WIDTH);
         }
 
         items++;

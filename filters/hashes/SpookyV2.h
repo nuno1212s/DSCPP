@@ -420,9 +420,9 @@ private:
 
 class SpookyHashImpl : public HashFunction {
 public:
-    unsigned int hashObject(void *pVoid, uint32_t size) override {
+    unsigned int hashObject(const void *pVoid, uint32_t size, int seed) override {
 
-        return SpookyHash::Hash32(pVoid, size, SEED);
+        return SpookyHash::Hash32(pVoid, size, SEED ^ seed);
 
     };
 

@@ -2,6 +2,8 @@
 #define TRABALHO1_CONCURRENTBLOOMFILTER_H
 
 #include "../datastructures.h"
+#include "hashes/SpookyV2.h"
+#include "hashes/MurmurHash3.h"
 #include <atomic>
 #include <mutex>
 
@@ -22,6 +24,19 @@ private:
 
     unsigned int calculatePositionFromHash(unsigned int hash) {
         return hash % (byteSize * UINT8_WIDTH);
+    }
+
+    unsigned int getHashFunction(int hashFunc, void *key, uint32_t size) {
+
+        static MurmurHash murmurHash;
+
+        static SpookyHashImpl spookyHash;
+
+        if (hashFunc % 2 == 0)  {
+            return murmurHash.hashObject(key, size, hashFunc);
+        } else {
+            return spookyHash.hashObject(key, size, hashFunc);
+        }
     }
 
     void setBitToOne(uint64_t &toChange, unsigned int position) {
@@ -65,9 +80,7 @@ public:
          */
         for (int i = 0; i < DEFAULT_HASH_FUNCTIONS; i++) {
 
-            MurmurHash hashFunc;
-
-            unsigned int hash = hashFunc.hashObject(key, sizeof(T));
+            unsigned int hash = getHashFunction(i, &key, sizeof(T));
 
             hash = calculatePositionFromHash(hash);
 
@@ -88,9 +101,7 @@ public:
 
         for (int i = 0; i < DEFAULT_HASH_FUNCTIONS; i++) {
 
-            MurmurHash hashFunc;
-
-            unsigned int hash = hashFunc.hashObject(key, sizeof(T));
+            unsigned int hash = getHashFunction(i, &key, sizeof(T));
 
             hash = calculatePositionFromHash(hash);
 

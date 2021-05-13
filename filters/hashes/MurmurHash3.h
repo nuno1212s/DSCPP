@@ -40,11 +40,11 @@ void MurmurHash3_x64_128 ( const void * key, int len, uint32_t seed, void * out 
 class MurmurHash : public HashFunction {
 
 public:
-    unsigned int hashObject(void *key, uint32_t size) override {
+    unsigned int hashObject(const void *key, uint32_t size, int seed) override {
 
         int output[4];
 
-        MurmurHash3_x64_128(key, size, SEED, output);
+        MurmurHash3_x64_128(key, size, SEED ^ seed, output);
 
         //Only grab the LS (Least significant) 32 bits
         return output[3];

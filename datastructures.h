@@ -66,6 +66,8 @@ public:
 template<typename T>
 class Filter {
 public:
+    virtual ~Filter() {};
+
     virtual bool test(const T &key) = 0;
 
     virtual void add(const T &key) = 0;
@@ -79,7 +81,7 @@ public:
 
 class HashFunction {
 public:
-    virtual unsigned int hashObject(void *, uint32_t size) = 0;
+    virtual unsigned int hashObject(const void *, uint32_t size, int seed) = 0;
 
 };
 
