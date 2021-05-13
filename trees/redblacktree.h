@@ -53,7 +53,7 @@ protected:
     std::unique_ptr<TreeNode<T, V>>
     initializeNode(std::shared_ptr<T> key, std::shared_ptr<V> value, TreeNode<T, V> *parent) override {
 
-        //A SkipNode always starts as a RED node
+        //A Node always starts as a RED node
         auto node = std::make_unique<RBNode<T, V>>(key, value, parent, NodeColor::RED);
 
         return std::move(node);
