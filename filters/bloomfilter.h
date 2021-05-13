@@ -27,6 +27,8 @@ private:
      */
     unsigned int items;
 
+    unsigned int hashFunctionCount;
+
     /**
      * Unique ptr to the data, which should be byteSize bytes long
      */
@@ -78,8 +80,8 @@ private:
     }
 
 public:
-    BloomFilter(unsigned int byteSize = DEFAULT_BLOOM_FILTER_SIZE)
-            : byteSize(byteSize) {
+    BloomFilter(unsigned int byteSize = DEFAULT_BLOOM_FILTER_SIZE, unsigned int hashFunctions = DEFAULT_HASH_FUNCTIONS)
+            : byteSize(byteSize), hashFunctionCount(hashFunctions) {
         data = std::make_unique<std::vector<uint8_t>>(this->byteSize);
     };
 
@@ -89,7 +91,7 @@ public:
 
     bool test(const T &key) override {
 
-        for (int i = 0; i < DEFAULT_HASH_FUNCTIONS; i++) {
+        for (int i = 0; i < hashFunctionCount; i++) {
 
             unsigned int hash = getHashFunction(i, &key, sizeof(T));
 
@@ -110,7 +112,7 @@ public:
 
     void add(const T &key) override {
 
-        for (int i = 0; i < DEFAULT_HASH_FUNCTIONS; i++) {
+        for (int i = 0; i < hashFunctionCount; i++) {
 
             unsigned int hash = getHashFunction(i, &key, sizeof(T));
 
